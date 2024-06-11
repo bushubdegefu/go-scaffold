@@ -1,0 +1,175 @@
+package temps
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"os/exec"
+	"text/template"
+)
+
+func CommonFrame() {
+	// Open the JSON file
+	file, err := os.Open("config.json")
+	if err != nil {
+		fmt.Println("Error opening JSON file:", err)
+		return
+	}
+	defer file.Close() // Defer closing the file until the function returns
+
+	// Decode the JSON content into the data structure
+	var data Data
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&data)
+	if err != nil {
+		fmt.Println("Error decoding JSON:", err)
+		return
+	}
+
+	// ############################################################
+	common_tmpl, err := template.New("data").Parse(commonTemplate)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create the models directory if it does not exist
+	err = os.MkdirAll("common", os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
+	common_file, err := os.Create("common/common.go")
+	if err != nil {
+		panic(err)
+	}
+	defer common_file.Close()
+
+	err = common_tmpl.Execute(common_file, data)
+	if err != nil {
+		panic(err)
+	}
+
+	// running go mod tidy finally
+	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
+		fmt.Printf("error: %v \n", err)
+	}
+
+}
+
+var commonTemplate = `
+package common
+
+import (
+	"math"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+)
+
+type ResponseHTTP struct {
+	Success bool        {{.BackTick}}json:"success"{{.BackTick}}
+	Data    interface{} {{.BackTick}}json:"data"{{.BackTick}}
+	Message string      {{.BackTick}}json:"details"{{.BackTick}}
+}
+
+type ResponsePagination struct {
+	Success bool        {{.BackTick}}json:"success"{{.BackTick}}
+	Items   interface{} {{.BackTick}}json:"data"{{.BackTick}}
+	Message string      {{.BackTick}}json:"details"{{.BackTick}}
+	Total   uint        {{.BackTick}}json:"total"{{.BackTick}}
+	Page    uint        {{.BackTick}}json:"page"{{.BackTick}}
+	Size    uint        {{.BackTick}}json:"size"{{.BackTick}}
+	Pages   uint        {{.BackTick}}json:"pages"{{.BackTick}}
+}
+
+func Pagination(db *gorm.DB, queryModel interface{}, responseObjectModel interface{}, page uint, size uint) (ResponsePagination, error) {
+	//  protection against requesting large amount of data
+	//  set to 50
+	var update_size uint
+	if size > 50 {
+		size = 50
+	}
+
+	count_channel := make(chan int64)
+	str_chann := make(chan string)
+	var offset int64 = int64(page-1) * int64(update_size)
+	//finding count value
+	go func() {
+		var local_counter int64
+		db.Select("id").Model(&queryModel).Count(&local_counter)
+		count_channel <- local_counter
+
+	}()
+	//  set offset value for page One
+	var response_page int64
+	go func() {
+		if page == 1 {
+			db.Order("id asc").Limit(int(size)).Offset(0).Preload(clause.Associations).Find(&responseObjectModel)
+			response_page = 1
+		} else {
+			db.Order("id asc").Limit(int(size)).Offset(int(offset)).Preload(clause.Associations).Find(&responseObjectModel)
+			// response_channel <- loc_resp
+			response_page = int64(page)
+		}
+		str_chann <- "completed"
+	}()
+	count := <-count_channel
+	response_obj := <-str_chann
+	pages := math.Ceil(float64(count) / float64(size))
+	
+
+	result := ResponsePagination{
+		Success: true,
+		Items:   responseObjectModel,
+		Message: response_obj,
+		Total:   uint(count),
+		Page:    uint(response_page),
+		Size:    uint(size),
+		Pages:   uint(pages),
+	}
+	return result, nil
+}
+
+func PaginationPureModel(db *gorm.DB, queryModel interface{}, responseObjectModel interface{}, page uint, size uint) (ResponsePagination, error) {
+	if size > 50 {
+		size = 50
+	}
+	count_channel := make(chan int64)
+	str_chann := make(chan string)
+	var offset int64 = int64(page-1) * int64(size)
+	//finding count value
+	go func() {
+		var local_counter int64
+		db.Select("id").Model(&queryModel).Count(&local_counter)
+		count_channel <- local_counter
+
+	}()
+	//  set offset value for page One
+	var response_page int64
+	go func() {
+		if page == 1 {
+			db.Model(&queryModel).Order("id asc").Limit(int(size)).Offset(0).Find(&responseObjectModel)
+			response_page = 1
+		} else {
+			db.Model(&queryModel).Order("id asc").Limit(int(size)).Offset(int(offset)).Find(&responseObjectModel)
+			// response_channel <- loc_resp
+			response_page = int64(page)
+		}
+		str_chann <- "completed"
+	}()
+
+	count := <-count_channel
+	response_obj := <-str_chann
+	pages := math.Ceil(float64(count) / float64(size))
+	result := ResponsePagination{
+		Success: true,
+		Items:   responseObjectModel,
+		Message: response_obj,
+		Total:   uint(count),
+		Page:    uint(response_page),
+		Size:    uint(size),
+		Pages:   uint(pages),
+	}
+	return result, nil
+}
+`

@@ -1,0 +1,38 @@
+{
+  "project_name" : "scaffplay",
+  "app_name" : "echoRun",
+  "back_tick": "`",
+  "models" : [
+    {
+      "name" : "Role",
+      "back_tick": "`",
+      "fields" :[
+        {
+        "name" : "ID",
+        "type" : "uint",
+        "annotation" : "gorm:\"primaryKey;autoIncrement:true\" json:\"id,omitempty\"",
+        "curd_flag" : "Get$Post$Patch$Put"
+        },
+        {
+          "name" : "Name",
+          "type" : "string",
+          "annotation" : "gorm:\"not null; unique;\" json:\"name,omitempty\"",
+          "curd_flag" : "Get$Post$Patch$Put"
+           },
+        {
+          "name" : "Description",
+          "type" : "string",
+          "annotation" : "gorm:\"not null; unique;\" json:\"description,omitempty\"",
+          "curd_flag" : "Get$Post$Patch$Put"
+           },
+        {
+          "name" : "Active",
+          "type" : "bool",
+          "annotation" : "gorm:\"default:true; constraint:not null;\" json:\"active\"",
+          "curd_flag" : "Get$Post$Patch$Put"
+           }
+      ]
+    }
+  ]
+}
+
