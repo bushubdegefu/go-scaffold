@@ -18,6 +18,8 @@ var (
 
 func genmod() {
 	temps.ModelDataFrame()
+	temps.CurdFrame()
+	temps.TestFrame()
 }
 
 func init() {

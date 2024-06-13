@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"text/template"
 )
 
@@ -24,6 +26,28 @@ func EchoFrame() {
 	if err != nil {
 		fmt.Println("Error decoding JSON:", err)
 		return
+	}
+	// setting default value for config data file
+	//  GetPostPatchPut
+	// "Get$Post$Patch$Put"
+
+	for i := 0; i < len(data.Models); i++ {
+		data.Models[i].LowerName = strings.ToLower(data.Models[i].Name)
+		data.Models[i].AppName = data.AppName
+		data.Models[i].ProjectName = data.ProjectName
+
+		for j := 0; j < len(data.Models[i].Fields); j++ {
+			data.Models[i].Fields[j].BackTick = "`"
+			cf := strings.Split(data.Models[i].Fields[j].CurdFlag, "$")
+
+			data.Models[i].Fields[j].Get, _ = strconv.ParseBool(cf[0])
+			data.Models[i].Fields[j].Post, _ = strconv.ParseBool(cf[1])
+			data.Models[i].Fields[j].Patch, _ = strconv.ParseBool(cf[2])
+			data.Models[i].Fields[j].Put, _ = strconv.ParseBool(cf[3])
+			data.Models[i].Fields[j].AppName = data.AppName
+			data.Models[i].Fields[j].ProjectName = data.ProjectName
+
+		}
 	}
 
 	// #####################
@@ -69,9 +93,14 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/labstack/echo/v4"
-	"{{.ProjectName}}.com/configs"
 
+	"github.com/labstack/echo-contrib/echoprometheus"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
+	"{{.ProjectName}}.com/configs"
+	"{{.ProjectName}}.com/configs"
+	"{{.ProjectName}}.com/models/controllers"
 	"github.com/spf13/cobra"
 )
 
@@ -90,36 +119,28 @@ func echo_run() {
 
 	app := echo.New()
 	configs.NewEnvFile("./configs")
-	
-	app.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
 
-	// Access an environment variable
-	apiKey := os.Getenv("TEST_NAME")
-	environ := os.Getenv("APP_ENV")
-	fmt.Printf(apiKey + ": \t" + environ + "\n")
-	// register route greet
-	app.GET("/greet", func(ctx echo.Context) error {
-		apiKey := os.Getenv("TEST_NAME")
-		environ := os.Getenv("APP_ENV")
-		fmt.Printf(apiKey + ": \t" + environ + "\n")
+	//  prometheus metrics middleware
+	app.Use(echoprometheus.NewMiddleware("echo_blue"))
 
-		return ctx.String(http.StatusOK, "Hello, World!")
-	})
+	// Rate Limiting to throttle overload
+	app.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(1000)))
 
-	// Runs the server, it will listen on the default port 8000.
-	// it can be over-ridden through configs
+	// Recover incase of panic attacks
+	app.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
+		StackSize: 1 << 10, // 1 KB
+		LogLevel:  log.ERROR,
+	}))
 
-	// configs.NewEnvFile("./configs", )
-
-	HTTP_PORT := configs.AppConfig.Get("HTTP_PORT")
-	// HTTP_PORT := "7500"
+	setupRoutes(app)
 	// starting on provided port
 	go func(app *echo.Echo) {
+		//  Http serving port
+		HTTP_PORT := configs.AppConfig.Get("HTTP_PORT")
 		app.Logger.Fatal(app.Start("0.0.0.0:" + HTTP_PORT))
 		// log.Fatal(app.ListenTLS(":" + port_1, "server.pem", "server-key.pem"))
 	}(app)
+	
 
 	c := make(chan os.Signal, 1)   // Create channel to signify a signal being sent
 	signal.Notify(c, os.Interrupt) // When an interrupt or termination signal is sent, notify the channel
@@ -136,6 +157,19 @@ func echo_run() {
 func init() {
 	goFrame.AddCommand({{.AppName}})
 
+}
+
+
+func setupRoutes(app *echo.Echo) {
+	gapp := app.Group("/admin")
+	{{range .Models}}
+	gapp.GET("/{{.LowerName}}", controllers.Get{{.Name}}s).Name = "get_all_{{.LowerName}}s"
+	gapp.GET("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Get{{.Name}}ByID).Name = "get_one_{{.LowerName}}s"
+	gapp.POST("/{{.LowerName}}", controllers.Post{{.Name}}).Name = "post_{{.LowerName}}"
+	gapp.PATCH("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Patch{{.Name}}).Name = "patch_{{.LowerName}}"
+	gapp.DELETE("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Delete{{.Name}}).Name = "delete_{{.LowerName}}"
+
+	{{end}}
 }
 
 `

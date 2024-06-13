@@ -89,6 +89,10 @@ func Frame() {
 	if err != nil {
 		panic(err)
 	}
+	err = os.MkdirAll("tests", os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
 
 	config_file, err := os.Create("configs/configs.go")
 	if err != nil {
@@ -114,6 +118,17 @@ func Frame() {
 	}
 	defer env_file.Close()
 
+	tenv_file, err := os.Create("tests/.env")
+	if err != nil {
+		panic(err)
+	}
+	defer tenv_file.Close()
+
+	err = env_tmpl.Execute(tenv_file, data)
+	if err != nil {
+		panic(err)
+	}
+
 	err = env_tmpl.Execute(env_file, data)
 	if err != nil {
 		panic(err)
@@ -133,6 +148,23 @@ func Frame() {
 	defer devenv_file.Close()
 
 	err = devenv_tmpl.Execute(devenv_file, data)
+	if err != nil {
+		panic(err)
+	}
+
+	// ##########################################################
+	testenv_tmpl, err := template.New("data").Parse(devenvTemplate)
+	if err != nil {
+		panic(err)
+	}
+
+	testenv_file, err := os.Create("tests/.test.env")
+	if err != nil {
+		panic(err)
+	}
+	defer testenv_file.Close()
+
+	err = testenv_tmpl.Execute(testenv_file, data)
 	if err != nil {
 		panic(err)
 	}
