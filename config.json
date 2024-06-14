@@ -6,31 +6,120 @@
     {
       "name" : "Role",
       "back_tick": "`",
+      "rln_model" : ["Users$mtm"],
       "fields" :[
         {
         "name" : "ID",
         "type" : "uint",
         "annotation" : "gorm:\"primaryKey;autoIncrement:true\" json:\"id,omitempty\"",
-        "curd_flag" : "Get$Post$Patch$Put"
+        "curd_flag" : "Get$Post$Patch$Put$OtM$MtM$MtN"
         },
         {
           "name" : "Name",
           "type" : "string",
           "annotation" : "gorm:\"not null; unique;\" json:\"name,omitempty\"",
-          "curd_flag" : "Get$Post$Patch$Put"
+          "curd_flag" : "true$true$true$true$false$false"
            },
         {
           "name" : "Description",
           "type" : "string",
           "annotation" : "gorm:\"not null; unique;\" json:\"description,omitempty\"",
-          "curd_flag" : "Get$Post$Patch$Put"
+          "curd_flag" : "true$true$true$true$false$false"
            },
         {
           "name" : "Active",
           "type" : "bool",
           "annotation" : "gorm:\"default:true; constraint:not null;\" json:\"active\"",
-          "curd_flag" : "Get$Post$Patch$Put"
+          "curd_flag" : "true$false$true$true$false$false"
+           },
+        {
+          "name" : "AppID",
+          "type" : "sql.NullInt64",
+          "annotation" : "gorm:\"foreignkey:AppID OnDelete:SET NULL\" json:\"app,omitempty\" swaggertype:\"number\"",
+          "curd_flag" : "true$false$false$false$true$false"
+          },
+        {
+            "name" : "Users",
+            "type" : "[]User",
+            "annotation" : "gorm:\"many2many:user_roles; constraint:OnUpdate:CASCADE; OnDelete:CASCADE;\" json:\"users,omitempty\"",
+            "curd_flag" : "true$false$false$false$false$true"
            }
+
+      ]
+    },
+    {
+      "name" : "App",
+      "back_tick": "`",
+      "rln_model" : ["Roles$otm"],
+      "fields" :[
+        {
+        "name" : "ID",
+        "type" : "uint",
+        "annotation" : "gorm:\"primaryKey;autoIncrement:true\" json:\"id,omitempty\"",
+        "curd_flag" : "true$false$true$true$false$false"
+        },
+        {
+          "name" : "Name",
+          "type" : "string",
+          "annotation" : "gorm:\"not null; unique;\" json:\"name,omitempty\"",
+          "curd_flag" : "true$true$true$true$false$false"
+           },
+        {
+          "name" : "Description",
+          "type" : "string",
+          "annotation" : "gorm:\"not null; unique;\" json:\"description,omitempty\"",
+          "curd_flag" : "true$true$true$true$false$false"
+           },
+        {
+          "name" : "Roles",
+          "type" : "[]Role",
+          "annotation" : "gorm:\"association_foreignkey:AppID constraint:OnUpdate:SET NULL OnDelete:SET NULL\" json:\"roles,omitempty\"",
+          "curd_flag" : "true$false$false$false$true$false"
+           }
+      ]
+    },
+    {
+      "name" : "User",
+      "back_tick": "`",
+      "rln_model" : ["Roles$mtm"],
+      "fields" :[
+        {
+        "name" : "ID",
+        "type" : "uint",
+        "annotation" : "gorm:\"primaryKey;autoIncrement:true\" json:\"id,omitempty\"",
+        "curd_flag" : "true$false$false$false$false$false"
+        },
+        {
+          "name" : "Name",
+          "type" : "string",
+          "annotation" : "gorm:\"not null; unique;\" json:\"name,omitempty\"",
+          "curd_flag" : "true$true$true$true$false$false"
+           },
+        {
+          "name" : "Description",
+          "type" : "string",
+          "annotation" : "gorm:\"not null; unique;\" json:\"description,omitempty\"",
+          "curd_flag" : "true$true$true$true$false$false"
+           },
+        {
+          "name" : "Active",
+          "type" : "bool",
+          "annotation" : "gorm:\"default:true; constraint:not null;\" json:\"active\"",
+          "curd_flag" : "true$true$true$true$false$false"
+           },
+        {
+          "name" : "UUID",
+          "type" : "uuid.UUID",
+          "annotation" : "gorm:\"constraint:not null; type:uuid;\" json:\"uuid\"",
+          "curd_flag" : "true$false$false$false$true$false"
+          },
+        {
+            "name" : "Roles",
+            "type" : "[]Role",
+            "annotation" : "gorm:\"many2many:user_roles; constraint:OnUpdate:CASCADE; OnDelete:CASCADE;\" json:\"roles,omitempty\"",
+            "curd_flag" : "true$false$false$false$false$true"
+           }
+
       ]
     }
   ]

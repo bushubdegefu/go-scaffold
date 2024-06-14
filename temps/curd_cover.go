@@ -311,13 +311,13 @@ var tests{{.Name}}sPatchID = []struct {
 		{{.LowerName}}_id:     "100",
 		patch_data: models.{{.Name}}Patch{
 			Name:        "Name one eight",
-			Description: "Description of Name one for test 2",
+			Description: "Description of Name one for test 3",
 		},
 		expectedCode: 404,
 	},
 	// Second test case
 	{
-		name:        "get {{.Name}} By ID check - 3",
+		name:        "get {{.Name}} By ID check - 4",
 		description: "get HTTP status 404, when {{.Name}} Does not exist",
 		route:       "/admin/{{.LowerName}}/:{{.LowerName}}_id",
 		{{.LowerName}}_id:     "@@",
@@ -396,14 +396,14 @@ var tests{{.Name}}sGet = []struct {
 	},
 	// First test case
 	{
-		name:         "get {{.Name}}s working - 1",
+		name:         "get {{.Name}}s working - 2",
 		description:  "get HTTP status 200",
 		route:        "/admin/{{.LowerName}}?page=0&size=-5",
 		expectedCode: 400,
 	},
 	// Second test case
 	{
-		name:         "get {{.Name}}s Working - 2",
+		name:         "get {{.Name}}s Working - 3",
 		description:  "get HTTP status 404, when {{.Name}} Does not exist",
 		route:        "/admin/{{.LowerName}}?page=1&size=0",
 		expectedCode: 400,
@@ -462,7 +462,7 @@ var tests{{.Name}}sGetByID = []struct {
 
 	// First test case
 	{
-		name:         "get {{.Name}}s By ID check - 1",
+		name:         "get {{.Name}}s By ID check - 2",
 		description:  "get Single {{.Name}} by ID",
 		route:        "/admin/{{.LowerName}}/:{{.LowerName}}_id",
 		{{.LowerName}}_id:      "-1",
@@ -470,7 +470,7 @@ var tests{{.Name}}sGetByID = []struct {
 	},
 	// Second test case
 	{
-		name:         "get {{.Name}} By ID check - 2",
+		name:         "get {{.Name}} By ID check - 3",
 		description:  "get HTTP status 404, when {{.Name}} Does not exist",
 		route:        "/admin/{{.LowerName}}/:{{.LowerName}}_id",
 		{{.LowerName}}_id:      "100",

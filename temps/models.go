@@ -29,10 +29,14 @@ func ModelDataFrame() {
 		return
 	}
 	// setting default value for config data file
-	//  GetPostPatchPut
-	// "Get$Post$Patch$Put"
+	//  Get$Post$Patch$Put$OnetoMany$ManytoMany
+	// "Get$Post$Patch$Put$OtM$MtM"
 
 	for i := 0; i < len(data.Models); i++ {
+		data.Models[i].LowerName = strings.ToLower(data.Models[i].Name)
+		data.Models[i].AppName = data.AppName
+		data.Models[i].ProjectName = data.ProjectName
+
 		for j := 0; j < len(data.Models[i].Fields); j++ {
 			data.Models[i].Fields[j].BackTick = "`"
 			cf := strings.Split(data.Models[i].Fields[j].CurdFlag, "$")
@@ -41,6 +45,8 @@ func ModelDataFrame() {
 			data.Models[i].Fields[j].Post, _ = strconv.ParseBool(cf[1])
 			data.Models[i].Fields[j].Patch, _ = strconv.ParseBool(cf[2])
 			data.Models[i].Fields[j].Put, _ = strconv.ParseBool(cf[3])
+			data.Models[i].Fields[j].AppName = data.AppName
+			data.Models[i].Fields[j].ProjectName = data.ProjectName
 
 		}
 	}
@@ -162,7 +168,6 @@ type {{.Name}}Get struct {
 	{{range .Fields}}
 	{{if .Get}}
 	{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}
-	
 	{{end}}
 	{{end}}
 }
@@ -206,16 +211,37 @@ func InitDatabase() {
 	configs.NewEnvFile("./configs")	
 	database := database.ReturnSession()
 	fmt.Println("Connection Opened to Database")
+	
 	if err := database.AutoMigrate(
-	{{range .Models}}
-	&{{.Name}}{},
-	{{end}}
+		
+		{{range .Models}}
+		&{{.Name}}{},
+		{{end}}
 
 	); err != nil {
 		log.Fatalln(err)
 	}
 	fmt.Println("Database Migrated")
-}`
+}
+
+func CleanDatabase() {
+	configs.NewEnvFile("./configs")	
+	database := database.ReturnSession()
+	fmt.Println("Connection Opened to Database")
+	
+	fmt.Println("Dropping Models if Exist")
+	{{range .Models}}
+	// Drop the join table
+	database.Migrator().DropTable(
+		&{{.Name}}{},
+	)
+	{{end}}
+	
+	fmt.Println("Database Cleaned")
+}
+
+
+`
 
 var databaseTemplate = `
 package database
@@ -317,4 +343,8 @@ func ReturnSession() *gorm.DB {
 	}
 	return DBSession
 
-}`
+}
+
+
+
+`

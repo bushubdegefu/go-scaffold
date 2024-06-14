@@ -99,9 +99,11 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"{{.ProjectName}}.com/configs"
-	"{{.ProjectName}}.com/configs"
 	"{{.ProjectName}}.com/models/controllers"
 	"github.com/spf13/cobra"
+
+	"github.com/swaggo/echo-swagger"
+	_ "{{.ProjectName}}.com/docs"
 )
 
 var (
@@ -131,6 +133,8 @@ func echo_run() {
 		StackSize: 1 << 10, // 1 KB
 		LogLevel:  log.ERROR,
 	}))
+
+	app.GET("/docs/*", echoSwagger.WrapHandler)
 
 	setupRoutes(app)
 	// starting on provided port

@@ -30,12 +30,27 @@ func CurdFrame() {
 	}
 	// setting default value for config data file
 	//  GetPostPatchPut
-	// "Get$Post$Patch$Put"
+	// "Get$Post$Patch$Put$OtM$MtM"
 
 	for i := 0; i < len(data.Models); i++ {
 		data.Models[i].LowerName = strings.ToLower(data.Models[i].Name)
 		data.Models[i].AppName = data.AppName
 		data.Models[i].ProjectName = data.ProjectName
+		rl_list := make([]Relationship, 0)
+		for k := 0; k < len(data.Models[i].RlnModel); k++ {
+			rmf := strings.Split(data.Models[i].RlnModel[k], "$")
+			cur_relation := Relationship{
+				ParentName:      data.Models[i].AppName,
+				LowerParentName: data.Models[i].LowerName,
+				FieldName:       rmf[0],
+				LowerFieldName:  strings.ToLower(rmf[0]),
+				MtM:             rmf[1] == "mtm",
+				OtM:             rmf[1] == "otm",
+				MtO:             rmf[1] == "mto",
+			}
+			rl_list = append(rl_list, cur_relation)
+			data.Models[i].Relations = rl_list
+		}
 
 		for j := 0; j < len(data.Models[i].Fields); j++ {
 			data.Models[i].Fields[j].BackTick = "`"
@@ -208,12 +223,12 @@ func Get{{.Name}}ByID(contx echo.Context) error {
 // Add {{.Name}} to data
 // @Summary Add a new {{.Name}}
 // @Description Add {{.Name}}
-// @Tags {{.Name}}
+// @Tags {{.Name}}s
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param {{.LowerName}} body {{.Name}}Post true "Add {{.Name}}"
-// @Success 200 {object} common.ResponseHTTP{data={{.Name}}Post}
+// @Param {{.LowerName}} body models.{{.Name}}Post true "Add {{.Name}}"
+// @Success 200 {object} common.ResponseHTTP{data=models.{{.Name}}Post}
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}s [post]
@@ -277,11 +292,11 @@ func Post{{.Name}}(contx echo.Context) error {
 // Patch {{.Name}} to data
 // @Summary Patch {{.Name}}
 // @Description Patch {{.Name}}
-// @Tags {{.Name}}
+// @Tags {{.Name}}s
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param {{.LowerName}} body {{.Name}}Post true "Patch {{.Name}}"
+// @Param {{.LowerName}} body models.{{.Name}}Post true "Patch {{.Name}}"
 // @Param id path int true "{{.Name}} ID"
 // @Success 200 {object} common.ResponseHTTP{data=models.{{.Name}}Post}
 // @Failure 400 {object} common.ResponseHTTP{}
@@ -370,7 +385,7 @@ func Patch{{.Name}}(contx echo.Context) error {
 // Delete{{.Name}}s function removes a {{.LowerName}} by ID
 // @Summary Remove {{.Name}} by ID
 // @Description Remove {{.LowerName}} by ID
-// @Tags {{.Name}}
+// @Tags {{.Name}}s
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
@@ -437,5 +452,312 @@ func Delete{{.Name}}(contx echo.Context) error {
 		Data:    {{.LowerName}},
 	})
 }
+
+// ################################################################
+// Relationship Based Endpoints
+// ################################################################
+
+{{ range .Relations }}
+{{if .MtM}}
+
+
+// Add {{.FieldName}} to {{.ParentName}}
+// @Summary Add {{.ParentName}} to {{.FieldName}}
+// @Description Add {{.FieldName}} {{.ParentName}}
+// @Tags {{.FieldName}}{{.ParentName}}s
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param {{.LowerFieldName}}_id path int true "{{.FieldName}} ID"
+// @Param {{.LowerParentName}}_id path int true "{{.ParentName}} ID"
+// @Failure 400 {object} common.ResponseHTTP{}
+// @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [post]
+func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
+	db := database.ReturnSession()
+
+	// validate path params
+	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Param("{{.LowerFieldName}}_id"))
+	if err != nil {
+		return contx.JSON(http.StatusBadRequest, common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
+
+	// validate path params
+	{{.LowerParentName}}_id, err := strconv.Atoi(contx.Param("{{.LowerParentName}}_id"))
+	if err != nil {
+		return contx.JSON(http.StatusBadRequest, common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
+
+	// fetching {{.LowerParentName}} to be added
+	var {{.LowerParentName}} models.{{.ParentName}}
+	{{.LowerParentName}}.ID = uint({{.LowerParentName}}_id)
+	if res := db.Find(&{{.LowerParentName}}); res.Error != nil {
+		return contx.JSON(http.StatusServiceUnavailable, common.ResponseHTTP{
+			Success: false,
+			Message: res.Error.Error(),
+			Data:    nil,
+		})
+	}
+
+	//  {{.LowerParentName}}ending assocation
+	var {{.LowerFieldName}} models.{{.FieldName}}
+	{{.LowerFieldName}}.ID = uint({{.LowerFieldName}}_id)
+	if err := db.Find(&{{.LowerFieldName}}); err.Error != nil {
+		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
+			Success: false,
+			Message: "Record not Found",
+			Data:    err.Error.Error(),
+		})
+	}
+
+	tx := db.Begin()
+	if err := db.Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").{{.ParentName}}end(&{{.LowerParentName}}); err != nil {
+		tx.Rollback()
+		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
+			Success: false,
+			Message: "{{.ParentName}}ending {{.ParentName}} Failed",
+			Data:    err.Error(),
+		})
+	}
+	tx.Commit()
+
+	// return value if transaction is sucessfull
+	return contx.JSON(http.StatusOK, common.ResponseHTTP{
+		Success: true,
+		Message: "Success Creating a {{.LowerParentName}} {{.FieldName}}.",
+		Data:    {{.LowerParentName}},
+	})
+}
+
+// Delete {{.ParentName}} to {{.FieldName}}
+// @Summary Add {{.ParentName}}
+// @Description Delete {{.FieldName}} {{.ParentName}}
+// @Tags {{.FieldName}}s
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param {{.LowerFieldName}}_id path int true "{{.FieldName}} ID"
+// @Param {{.LowerParentName}}_id path int true "{{.ParentName}} ID"
+// @Success 200 {object} common.ResponseHTTP{data={{.ParentName}}Post}
+// @Failure 400 {object} common.ResponseHTTP{}
+// @Failure 500 {object} common.ResponseHTTP{}
+// @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [delete]
+func Delete{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
+	
+	//Connect to Database   
+	db := database.ReturnSession()
+	
+	// validate path params
+	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Param("{{.LowerFieldName}}_id"))
+	if err != nil || {{.LowerFieldName}}_id == 0 {
+		return contx.JSON(http.StatusBadRequest, common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
+
+	{{.LowerParentName}}_id, err := strconv.Atoi(contx.Param("{{.LowerParentName}}_id"))
+	if err != nil || {{.LowerParentName}}_id == 0 {
+		return contx.JSON(http.StatusBadRequest, common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
+	// fetching {{.LowerParentName}} to be deleted
+	var {{.LowerParentName}} models.{{.ParentName}}
+	{{.LowerParentName}}.ID = uint({{.LowerParentName}}_id)
+	if res := db.Find(&{{.LowerParentName}}); res.Error != nil {
+		return contx.JSON(http.StatusServiceUnavailable, common.ResponseHTTP{
+			Success: false,
+			Message: res.Error.Error(),
+			Data:    nil,
+		})
+	}
+
+	// fettchng {{.LowerFieldName}}
+	var {{.LowerFieldName}} models.{{.FieldName}}
+	{{.LowerFieldName}}.ID = uint({{.LowerFieldName}}_id)
+	if err := db.Find(&{{.LowerFieldName}}); err.Error != nil {
+		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
+			Success: false,
+			Message: "Record not Found",
+			Data:    err.Error.Error(),
+		})
+	}
+
+	// removing {{.LowerParentName}}
+	tx := db.Begin()
+	if err := db.Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").Delete(&{{.LowerParentName}}); err != nil {
+		tx.Rollback()
+		return contx.JSON(http.StatusNonAuthoritativeInfo, common.ResponseHTTP{
+			Success: false,
+			Message: "Please Try Again Something Unexpected H{{.LowerParentName}}ened",
+			Data:    err.Error(),
+		})
+	}
+
+	tx.Commit()
+
+	// return value if transaction is sucessfull
+	return contx.JSON(http.StatusOK, common.ResponseHTTP{
+		Success: true,
+		Message: "Success Removing a {{.LowerParentName}} from {{.LowerFieldName}}.",
+		Data:    {{.LowerParentName}},
+	})
+}
+
+
+
+{{ end}}
+{{ end}}
+
+{{ range .Relations }}
+{{if .OtM}}
+
+// Add {{.ParentName}} {{.FieldName}}
+// @Summary Add {{.ParentName}} to {{.FieldName}}
+// @Description Add {{.ParentName}} to {{.FieldName}}
+// @Tags {{.ParentName}}s
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param {{.LowerFieldName}}_id path int true "{{.ParentName}} ID"
+// @Param {{.LowerParentName}}_id query int true "{{.FieldName}} ID"
+// @Failure 400 {object} common.ResponseHTTP{}
+// @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [patch]
+func Add{{.ParentName}}{{.FieldName}}(contx echo.Context) error {
+	db := database.ReturnSession()
+
+	// validate path params
+	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Param("{{.LowerFieldName}}_id"))
+	if err != nil {
+		return contx.JSON(http.StatusBadRequest, common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
+
+	// fetching Endpionts
+	var {{.LowerFieldName}} models.{{.FieldName}}
+	if res := db.Model(&models.{{.FieldName}}{}).Where("id = ?", {{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); res.Error != nil {
+		return contx.JSON(http.StatusServiceUnavailable, common.ResponseHTTP{
+			Success: false,
+			Message: res.Error.Error(),
+			Data:    nil,
+		})
+	}
+
+	// fetching {{.LowerFieldName}} to be added
+	{{.LowerParentName}}_id, _ := strconv.Atoi(contx.QueryParam("{{.LowerParentName}}_id"))
+	var {{.LowerParentName}} models.{{.ParentName}}
+	if res := db.Model(&models.{{.ParentName}}{}).Where("id = ?", {{.LowerParentName}}_id).First(&{{.LowerParentName}}); res.Error != nil {
+		return contx.JSON(http.StatusServiceUnavailable, common.ResponseHTTP{
+			Success: false,
+			Message: res.Error.Error(),
+			Data:    nil,
+		})
+	}
+
+	// startng update transaction
+
+	tx := db.Begin()
+	//  Adding one to many Relation
+	if err := db.Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").{{.ParentName}}end(&{{.LowerFieldName}}); err != nil {
+		tx.Rollback()
+		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
+			Success: false,
+			Message: "Error Adding Record",
+			Data:    err.Error(),
+		})
+	}
+	tx.Commit()
+
+	// return value if transaction is sucessfull
+	return contx.JSON(http.StatusOK, common.ResponseHTTP{
+		Success: true,
+		Message: "Success Adding a {{.FieldName}} to {{.ParentName}}.",
+		Data:    {{.LowerParentName}},
+	})
+}
+
+// Delete {{.ParentName}} {{.FieldName}}
+// @Summary Delete {{.ParentName}} {{.FieldName}}
+// @Description Delete {{.ParentName}} {{.FieldName}}
+// @Tags {{.ParentName}}s
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param {{.LowerFieldName}}_id path int true "{{.ParentName}} ID"
+// @Param {{.LowerParentName}}_id query int true "{{.FieldName}} ID"
+// @Failure 400 {object} common.ResponseHTTP{}
+// @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [delete]
+func Delete{{.ParentName}}{{.FieldName}}(contx echo.Context) error {
+	db := database.ReturnSession()
+
+	// validate path params
+	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Param("{{.LowerFieldName}}_id"))
+	if err != nil {
+		return contx.JSON(http.StatusBadRequest, common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
+
+	// Getting {{.FieldName}}
+	var {{.LowerFieldName}} models.{{.FieldName}}
+	if res := db.Model(&models.{{.FieldName}}{}).Where("id = ?", {{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); res.Error != nil {
+		return contx.JSON(http.StatusServiceUnavailable, common.ResponseHTTP{
+			Success: false,
+			Message: res.Error.Error(),
+			Data:    nil,
+		})
+	}
+
+	// fetching {{.LowerParentName}} to be added
+	var {{.LowerParentName}} models.{{.ParentName}}
+	{{.LowerParentName}}_id, _ := strconv.Atoi(contx.QueryParam("{{.LowerParentName}}_id"))
+	if res := db.Model(&models.{{.ParentName}}{}).Where("id = ?", {{.LowerParentName}}_id).First(&{{.LowerParentName}}); res.Error != nil {
+		return contx.JSON(http.StatusServiceUnavailable, common.ResponseHTTP{
+			Success: false,
+			Message: res.Error.Error(),
+			Data:    nil,
+		})
+	}
+
+	// Removing {{.FieldName}} From {{.ParentName}}
+	tx := db.Begin()
+	if err := db.Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").Delete(&{{.LowerFieldName}}); err != nil {
+		tx.Rollback()
+		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
+			Success: false,
+			Message: "Record not Found",
+			Data:    err.Error(),
+		})
+	}
+	tx.Commit()
+
+	// return value if transaction is sucessfull
+	return contx.JSON(http.StatusOK, common.ResponseHTTP{
+		Success: true,
+		Message: "Success Deleteing a {{.FieldName}} From {{.ParentName}}.",
+		Data:    {{.LowerParentName}},
+	})
+}
+
+
+{{ end}}
+{{ end}}
+
 
 `

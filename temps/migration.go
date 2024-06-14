@@ -75,6 +75,16 @@ var (
 			init_migrate()
 		},
 	}
+
+	{{.AppName}}clean= &cobra.Command{
+		Use:   "clean",
+		Short: "Drop Database Models for found in init migration Models",
+		Long:  {{.BackTick}}Drop Models found in the models definition{{.BackTick}},
+		Run: func(cmd *cobra.Command, args []string) {
+			clean_database()
+		},
+	}
+
 )
 
 func init_migrate() {
@@ -82,9 +92,15 @@ func init_migrate() {
 	fmt.Println("Migrated Database Models sucessfully")
 }
 
+func clean_database() {
+	models.CleanDatabase()
+	fmt.Println("Dropped Tables sucessfully")
+}
+
+
 func init() {
 	goFrame.AddCommand({{.AppName}}migrate)
-
+	goFrame.AddCommand({{.AppName}}clean)
 }
 
 `

@@ -316,10 +316,10 @@ HTTP_PORT=7500
 TEST_NAME="Development Development"
 
 #Database config settings
-#DB_TYPE=postgres
-#POSTGRES_URI="host=localhost user=blueuser password=default dbname=learning_one port=5432 sslmode=disable"
-DB_TYPE="sqlite"
-SQLLITE_URI="goframe.db"
+DB_TYPE=postgres
+POSTGRES_URI="host=localhost user=blueuser password=default dbname=learning_one port=5432 sslmode=disable"
+#DB_TYPE="sqlite"
+#SQLLITE_URI="goframe.db"
 
 #Messeage qeue settings specifically rabbit
 RABBIT_URI="amqps://fldooyrt:bQLS-hvGReUQPy_kUSexUYOhzJHwf08u@lionfish.rmq.cloudamqp.com:5671/fldooyrt"

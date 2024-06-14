@@ -9,12 +9,24 @@ type Data struct {
 }
 
 type Model struct {
-	Name        string  `json:"name"`
-	LowerName   string  `json:"lower_name"`
-	BackTick    string  `json:"back_tick"`
-	Fields      []Field `json:"fields"`
-	ProjectName string  `json:"project_name"`
-	AppName     string  `json:"app_name"`
+	Name        string         `json:"name"`
+	LowerName   string         `json:"lower_name"`
+	RlnModel    []string       `json:"rln_model"` // value to one of the models defined in the config json file
+	BackTick    string         `json:"back_tick"`
+	Fields      []Field        `json:"fields"`
+	ProjectName string         `json:"project_name"`
+	AppName     string         `json:"app_name"`
+	Relations   []Relationship `json:"relations"`
+}
+
+type Relationship struct {
+	ParentName      string `json:"parent_name"`
+	LowerParentName string `json:"lower_parent_name"`
+	FieldName       string `json:"field_name"`
+	LowerFieldName  string `json:"lower_field_name"`
+	MtM             bool   `json:"mtm"`
+	OtM             bool   `json:"otm"`
+	MtO             bool   `json:"mto"`
 }
 
 type Field struct {
@@ -27,6 +39,8 @@ type Field struct {
 	Post        bool   `json:"post"`
 	Patch       bool   `json:"patch"`
 	Put         bool   `json:"put"`
+	OtM         bool   `json:"otm"`
+	MtM         bool   `json:"mtm"`
 	ProjectName string `json:"project_name"`
 	AppName     string `json:"app_name"`
 }
