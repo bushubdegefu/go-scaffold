@@ -35,6 +35,21 @@ func EchoFrame() {
 		data.Models[i].LowerName = strings.ToLower(data.Models[i].Name)
 		data.Models[i].AppName = data.AppName
 		data.Models[i].ProjectName = data.ProjectName
+		rl_list := make([]Relationship, 0)
+		for k := 0; k < len(data.Models[i].RlnModel); k++ {
+			rmf := strings.Split(data.Models[i].RlnModel[k], "$")
+			cur_relation := Relationship{
+				ParentName:      data.Models[i].Name,
+				LowerParentName: data.Models[i].LowerName,
+				FieldName:       rmf[0],
+				LowerFieldName:  strings.ToLower(rmf[0]),
+				MtM:             rmf[1] == "mtm",
+				OtM:             rmf[1] == "otm",
+				MtO:             rmf[1] == "mto",
+			}
+			rl_list = append(rl_list, cur_relation)
+			data.Models[i].Relations = rl_list
+		}
 
 		for j := 0; j < len(data.Models[i].Fields); j++ {
 			data.Models[i].Fields[j].BackTick = "`"
@@ -173,7 +188,15 @@ func setupRoutes(app *echo.Echo) {
 	gapp.PATCH("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Patch{{.Name}}).Name = "patch_{{.LowerName}}"
 	gapp.DELETE("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Delete{{.Name}}).Name = "delete_{{.LowerName}}"
 
+	{{range .Relations}}
+	gapp.POST("/{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }}",controllers.Add{{.FieldName}}{{.ParentName}}s).Name = "add_{{.LowerFieldName}}{{.LowerParentName}}"
+	gapp.DELETE("/{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }}",controllers.Delete{{.FieldName}}{{.ParentName}}s).Name = "delete_{{.LowerFieldName}}{{.LowerParentName}}"
 	{{end}}
+	{{end}}
+
+
+
+
 }
 
 `

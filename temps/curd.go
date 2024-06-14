@@ -40,7 +40,7 @@ func CurdFrame() {
 		for k := 0; k < len(data.Models[i].RlnModel); k++ {
 			rmf := strings.Split(data.Models[i].RlnModel[k], "$")
 			cur_relation := Relationship{
-				ParentName:      data.Models[i].AppName,
+				ParentName:      data.Models[i].Name,
 				LowerParentName: data.Models[i].LowerName,
 				FieldName:       rmf[0],
 				LowerFieldName:  strings.ToLower(rmf[0]),
@@ -460,7 +460,6 @@ func Delete{{.Name}}(contx echo.Context) error {
 {{ range .Relations }}
 {{if .MtM}}
 
-
 // Add {{.FieldName}} to {{.ParentName}}
 // @Summary Add {{.ParentName}} to {{.FieldName}}
 // @Description Add {{.FieldName}} {{.ParentName}}
@@ -518,7 +517,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 	}
 
 	tx := db.Begin()
-	if err := db.Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").{{.ParentName}}end(&{{.LowerParentName}}); err != nil {
+	if err := db.Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").Append(&{{.LowerParentName}}); err != nil {
 		tx.Rollback()
 		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
 			Success: false,
@@ -634,7 +633,7 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 // @Param {{.LowerParentName}}_id query int true "{{.FieldName}} ID"
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [patch]
-func Add{{.ParentName}}{{.FieldName}}(contx echo.Context) error {
+func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 	db := database.ReturnSession()
 
 	// validate path params
@@ -672,7 +671,7 @@ func Add{{.ParentName}}{{.FieldName}}(contx echo.Context) error {
 
 	tx := db.Begin()
 	//  Adding one to many Relation
-	if err := db.Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").{{.ParentName}}end(&{{.LowerFieldName}}); err != nil {
+	if err := db.Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").Append(&{{.LowerFieldName}}); err != nil {
 		tx.Rollback()
 		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
 			Success: false,
@@ -701,7 +700,7 @@ func Add{{.ParentName}}{{.FieldName}}(contx echo.Context) error {
 // @Param {{.LowerParentName}}_id query int true "{{.FieldName}} ID"
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [delete]
-func Delete{{.ParentName}}{{.FieldName}}(contx echo.Context) error {
+func Delete{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 	db := database.ReturnSession()
 
 	// validate path params
