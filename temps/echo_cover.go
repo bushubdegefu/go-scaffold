@@ -10,7 +10,7 @@ import (
 	"text/template"
 )
 
-func TestFrame() {
+func TestFrameEcho() {
 
 	// Open the JSON file
 	file, err := os.Open("config.json")
@@ -53,7 +53,7 @@ func TestFrame() {
 
 	// ############################################################
 
-	test_tmpl, err := template.New("data").Parse(testTemplate)
+	test_tmpl, err := template.New("data").Parse(testTemplateEcho)
 	if err != nil {
 		panic(err)
 	}
@@ -90,7 +90,7 @@ func TestFrame() {
 	}
 }
 
-var testTemplate = `
+var testTemplateEcho = `
 package tests
 
 import (

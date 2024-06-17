@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	testCmd = &cobra.Command{
-		Use:   "frame",
+	basicstruct = &cobra.Command{
+		Use:   "basic",
 		Short: "generate basic folder structure for project",
 		Long:  `Generate basic folder structure for your project.`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -22,6 +22,6 @@ func basiccmd() {
 }
 
 func init() {
-	goFrame.AddCommand(testCmd)
+	goFrame.AddCommand(basicstruct)
 
 }

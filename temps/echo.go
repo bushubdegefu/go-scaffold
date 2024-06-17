@@ -195,8 +195,6 @@ func setupRoutes(app *echo.Echo) {
 	{{end}}
 
 
-
-
 }
 
 `

@@ -10,7 +10,7 @@ import (
 	"text/template"
 )
 
-func CurdFrame() {
+func CurdFrameEcho() {
 
 	// Open the JSON file
 	file, err := os.Open("config.json")
@@ -544,7 +544,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 // @Produce json
 // @Param {{.LowerFieldName}}_id path int true "{{.FieldName}} ID"
 // @Param {{.LowerParentName}}_id path int true "{{.ParentName}} ID"
-// @Success 200 {object} common.ResponseHTTP{data={{.ParentName}}Post}
+// @Success 200 {object} common.ResponseHTTP{data=models.{{.ParentName}}Post}
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [delete]
