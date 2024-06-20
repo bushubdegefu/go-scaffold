@@ -343,6 +343,10 @@ var devenvTemplate = `
 APP_NAME=dev
 HTTP_PORT=7500
 TEST_NAME="Development Development"
+BODY_LIMIT=70
+READ_BUFFER_SIZE=40
+RATE_LIMIT_PER_SECOND=5000
+
 
 #Database config settings
 DB_TYPE=postgres
