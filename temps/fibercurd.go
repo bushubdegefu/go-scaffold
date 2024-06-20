@@ -107,6 +107,7 @@ var curdTemplateFiber = `
 package controllers
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -136,6 +137,11 @@ import (
 // @Router /{{.LowerName}} [get]
 func Get{{.Name}}s(contx *fiber.Ctx) error {
 
+	// Starting tracer context and tracer
+	ctx := context.Background()
+	tracer, span := observe.AppSpanner(ctx, "Get{{.Name}}s-root")
+	defer span.End()
+
 	//  parsing Query Prameters
 	Page, _ := strconv.Atoi(contx.Query("page"))
 	Limit, _ := strconv.Atoi(contx.Query("size"))
@@ -152,7 +158,7 @@ func Get{{.Name}}s(contx *fiber.Ctx) error {
 	db := database.ReturnSession()
 
 	//  querying result with pagination using gorm function
-	result, err := common.PaginationPureModel(db, models.{{.Name}}{}, []models.{{.Name}}{}, uint(Page), uint(Limit))
+	result, err := common.PaginationPureModel(db, models.{{.Name}}{}, []models.{{.Name}}{}, uint(Page), uint(Limit), tracer)
 	if err != nil {
 		return contx.Status(http.StatusInternalServerError).JSON(common.ResponseHTTP{
 			Success: false,
@@ -178,6 +184,11 @@ func Get{{.Name}}s(contx *fiber.Ctx) error {
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [get]
 func Get{{.Name}}ByID(contx *fiber.Ctx) error {
 
+	// Starting tracer context and tracer
+	ctx := context.Background()
+	tracer, span := observe.AppSpanner(ctx, "Get{{.Name}}ByID-root")
+	defer span.End()
+
 	//  parsing Query Prameters
 	id, err := strconv.Atoi(contx.Params("{{.LowerName}}_id"))
 	if err != nil {
@@ -194,7 +205,7 @@ func Get{{.Name}}ByID(contx *fiber.Ctx) error {
 	// Preparing and querying database using Gorm
 	var {{.LowerName}}s_get models.{{.Name}}Get
 	var {{.LowerName}}s models.{{.Name}}
-	if res := db.Model(&models.{{.Name}}{}).Preload(clause.Associations).Where("id = ?", id).First(&{{.LowerName}}s); res.Error != nil {
+	if res := db.WithContext(tracer).Model(&models.{{.Name}}{}).Preload(clause.Associations).Where("id = ?", id).First(&{{.LowerName}}s); res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 			return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
 				Success: false,
@@ -233,8 +244,14 @@ func Get{{.Name}}ByID(contx *fiber.Ctx) error {
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}s [post]
 func Post{{.Name}}(contx *fiber.Ctx) error {
-	//  parsing Query Prameters
+	// Starting tracer context and tracer
+	ctx := context.Background()
+	tracer, span := observe.AppSpanner(ctx, "Post{{.Name}}-root")
+	defer span.End()	
+
+
 	db := database.ReturnSession()
+	//  parsing Query Prameters
 
 	// validator initialization
 	validate := validator.New()
@@ -266,7 +283,7 @@ func Post{{.Name}}(contx *fiber.Ctx) error {
 	{{.LowerName}}.Description = posted_{{.LowerName}}.Description
 
 	//  start transaction to database
-	tx := db.Begin()
+	tx := db.WithContext(tracer).Begin()
 
 	// add  data using transaction if values are valid
 	if err := tx.Create(&{{.LowerName}}).Error; err != nil {
@@ -303,6 +320,10 @@ func Post{{.Name}}(contx *fiber.Ctx) error {
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [patch]
 func Patch{{.Name}}(contx *fiber.Ctx) error {
+	// Starting tracer context and tracer
+	ctx := context.Background()
+	tracer, span := observe.AppSpanner(ctx, "Patch{{.Name}}-root")
+	defer span.End()
 
 	// Get database connection
 	db := database.ReturnSession()
@@ -342,10 +363,10 @@ func Patch{{.Name}}(contx *fiber.Ctx) error {
 	// startng update transaction
 	var {{.LowerName}} models.{{.Name}}
 	{{.LowerName}}.ID = uint(id)
-	tx := db.Begin()
+	tx := db.WithContext(tracer).Begin()
 
 	// Check if the record exists
-	if err := db.First(&{{.LowerName}}, {{.LowerName}}.ID).Error; err != nil {
+	if err := db.WithContext(tracer).First(&{{.LowerName}}, {{.LowerName}}.ID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// If the record doesn't exist, return an error response
 			tx.Rollback()
@@ -365,7 +386,7 @@ func Patch{{.Name}}(contx *fiber.Ctx) error {
 	}
 
 	// Update the record
-	if err := db.Model(&{{.LowerName}}).UpdateColumns(*patch_{{.LowerName}}).Error; err != nil {
+	if err := db.WithContext(tracer).Model(&{{.LowerName}}).UpdateColumns(*patch_{{.LowerName}}).Error; err != nil {
 		tx.Rollback()
 		return contx.Status(http.StatusInternalServerError).JSON(common.ResponseHTTP{
 			Success: false,
@@ -395,6 +416,11 @@ func Patch{{.Name}}(contx *fiber.Ctx) error {
 // @Failure 503 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [delete]
 func Delete{{.Name}}(contx *fiber.Ctx) error {
+	// Starting tracer context and tracer
+	ctx := context.Background()
+	tracer, span := observe.AppSpanner(ctx, "Delete{{.Name}}-root")
+	defer span.End()
+
 
 	// get deleted {{.LowerName}} attributes to return
 	var {{.LowerName}} models.{{.Name}}
@@ -413,7 +439,7 @@ func Delete{{.Name}}(contx *fiber.Ctx) error {
 	db := database.ReturnSession()
 
 	// perform delete operation if the object exists
-	tx := db.Begin()
+	tx := db.WithContext(tracer).Begin()
 
 	// first getting {{.LowerName}} and checking if it exists
 	if err := db.Where("id = ?", id).First(&{{.LowerName}}).Error; err != nil {
@@ -472,6 +498,12 @@ func Delete{{.Name}}(contx *fiber.Ctx) error {
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [post]
 func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
+	// Starting tracer context and tracer
+	ctx := context.Background()
+	tracer, span := observe.AppSpanner(ctx, "Add{{.FieldName}}{{.ParentName}}s-root")
+	defer span.End()	
+
+	// database connection
 	db := database.ReturnSession()
 
 	// validate path params
@@ -516,8 +548,8 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 		})
 	}
 
-	tx := db.Begin()
-	if err := db.Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").Append(&{{.LowerParentName}}); err != nil {
+	tx := db.WithContext(tracer).Begin()
+	if err := db.WithContext(tracer).Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").Append(&{{.LowerParentName}}); err != nil {
 		tx.Rollback()
 		return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
 			Success: false,
@@ -549,7 +581,11 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [delete]
 func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
-	
+	// Starting tracer context and tracer
+	ctx := context.Background()
+	tracer, span := observe.AppSpanner(ctx, "Delete{{.FieldName}}{{.ParentName}}s-root")
+	defer span.End()
+
 	//Connect to Database   
 	db := database.ReturnSession()
 	
@@ -594,8 +630,8 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 	}
 
 	// removing {{.LowerParentName}}
-	tx := db.Begin()
-	if err := db.Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").Delete(&{{.LowerParentName}}); err != nil {
+	tx := db.WithContext(tracer).Begin()
+	if err := db.WithContext(tracer).Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").Delete(&{{.LowerParentName}}); err != nil {
 		tx.Rollback()
 		return contx.Status(http.StatusNonAuthoritativeInfo).JSON(common.ResponseHTTP{
 			Success: false,
@@ -634,6 +670,13 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [patch]
 func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
+	
+	// Starting tracer context and tracer
+	ctx := context.Background()
+	tracer, span := observe.AppSpanner(ctx, "Add{{.FieldName}}{{.ParentName}}s-root")
+	defer span.End()	
+
+	// connect
 	db := database.ReturnSession()
 
 	// validate path params
@@ -648,7 +691,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 
 	// fetching Endpionts
 	var {{.LowerFieldName}} models.{{.FieldName}}
-	if res := db.Model(&models.{{.FieldName}}{}).Where("id = ?", {{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); res.Error != nil {
+	if res := db.WithContext(tracer).Model(&models.{{.FieldName}}{}).Where("id = ?", {{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); res.Error != nil {
 		return contx.Status(http.StatusServiceUnavailable).JSON(common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -659,7 +702,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 	// fetching {{.LowerFieldName}} to be added
 	{{.LowerParentName}}_id, _ := strconv.Atoi(contx.Query("{{.LowerParentName}}_id"))
 	var {{.LowerParentName}} models.{{.ParentName}}
-	if res := db.Model(&models.{{.ParentName}}{}).Where("id = ?", {{.LowerParentName}}_id).First(&{{.LowerParentName}}); res.Error != nil {
+	if res := db.WithContext(tracer).Model(&models.{{.ParentName}}{}).Where("id = ?", {{.LowerParentName}}_id).First(&{{.LowerParentName}}); res.Error != nil {
 		return contx.Status(http.StatusServiceUnavailable).JSON(common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -669,9 +712,9 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 
 	// startng update transaction
 
-	tx := db.Begin()
+	tx := db.WithContext(tracer).Begin()
 	//  Adding one to many Relation
-	if err := db.Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").Append(&{{.LowerFieldName}}); err != nil {
+	if err := db.WithContext(tracer).Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").Append(&{{.LowerFieldName}}); err != nil {
 		tx.Rollback()
 		return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
 			Success: false,
@@ -701,6 +744,12 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [delete]
 func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
+	// Starting tracer context and tracer
+	ctx := context.Background()
+	tracer, span := observe.AppSpanner(ctx, "Delete{{.FieldName}}{{.ParentName}}s-root")
+	defer span.End()	
+
+	//  database connection
 	db := database.ReturnSession()
 
 	// validate path params
@@ -715,7 +764,7 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 
 	// Getting {{.FieldName}}
 	var {{.LowerFieldName}} models.{{.FieldName}}
-	if res := db.Model(&models.{{.FieldName}}{}).Where("id = ?", {{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); res.Error != nil {
+	if res := db.WithContext(tracer).Model(&models.{{.FieldName}}{}).Where("id = ?", {{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); res.Error != nil {
 		return contx.Status(http.StatusServiceUnavailable).JSON(common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -726,7 +775,7 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 	// fetching {{.LowerParentName}} to be added
 	var {{.LowerParentName}} models.{{.ParentName}}
 	{{.LowerParentName}}_id, _ := strconv.Atoi(contx.Query("{{.LowerParentName}}_id"))
-	if res := db.Model(&models.{{.ParentName}}{}).Where("id = ?", {{.LowerParentName}}_id).First(&{{.LowerParentName}}); res.Error != nil {
+	if res := db.WithContext(tracer).Model(&models.{{.ParentName}}{}).Where("id = ?", {{.LowerParentName}}_id).First(&{{.LowerParentName}}); res.Error != nil {
 		return contx.Status(http.StatusServiceUnavailable).JSON(common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -735,8 +784,8 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 	}
 
 	// Removing {{.FieldName}} From {{.ParentName}}
-	tx := db.Begin()
-	if err := db.Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").Delete(&{{.LowerFieldName}}); err != nil {
+	tx := db.WithContext(tracer).Begin()
+	if err := db.WithContext(tracer).Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").Delete(&{{.LowerFieldName}}); err != nil {
 		tx.Rollback()
 		return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
 			Success: false,

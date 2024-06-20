@@ -18,6 +18,7 @@ var (
 
 func fibergen() {
 	temps.FiberFrame()
+	temps.TracerFrame()
 }
 
 func init() {

@@ -18,7 +18,9 @@ var (
 
 func basiccmd() {
 	temps.Frame()
+	temps.DbConnDataFrame()
 	temps.CommonFrame()
+	temps.TracerFrame()
 }
 
 func init() {

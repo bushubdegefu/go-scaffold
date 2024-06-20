@@ -152,6 +152,23 @@ func Frame() {
 		panic(err)
 	}
 
+	// ############################################################
+	prodenv_tmpl, err := template.New("data").Parse(devenvTemplate)
+	if err != nil {
+		panic(err)
+	}
+
+	prodenv_file, err := os.Create("configs/.prod.env")
+	if err != nil {
+		panic(err)
+	}
+	defer prodenv_file.Close()
+
+	err = prodenv_tmpl.Execute(prodenv_file, data)
+	if err != nil {
+		panic(err)
+	}
+
 	// ##########################################################
 	testenv_tmpl, err := template.New("data").Parse(devenvTemplate)
 	if err != nil {
@@ -250,6 +267,7 @@ const (
 
 type EnvConfig struct {
 	defaultPath string
+	prodFlag    string
 }
 
 type Config interface {
@@ -279,12 +297,15 @@ func (e *EnvConfig) read() {
 		fmt.Printf("INFO: Loaded config from file: %v\n", defaultFile)
 	}
 
-	// If 'APP_ENV' is set to x, then GoFr will read '.env' from configs directory, and then it will be overwritten
+	// If 'APP_ENV' is set to x, then App will read '.env' from configs directory, and then it will be overwritten
 	// by configs present in file '.x.env'
 	overrideFile = fmt.Sprintf("%s/.%s.env", e.defaultPath, env)
-	if env == "" {
-		overrideFile = fmt.Sprintf("%s/.env", e.defaultPath)
+	if env == "" && e.prodFlag == "" {
+		overrideFile = fmt.Sprintf("%s/dev.env", e.defaultPath)
+	}
 
+	if e.prodFlag != "" {
+		overrideFile = fmt.Sprintf("%s/.%s.env", e.defaultPath, e.prodFlag)
 	}
 	err = godotenv.Overload(overrideFile)
 	if err != nil {
@@ -296,6 +317,14 @@ func (e *EnvConfig) read() {
 
 func (e *EnvConfig) Get(key string) string {
 	return os.Getenv(key)
+}
+
+func (e *EnvConfig) SetEnv(key string) {
+	AppConfig = EnvConfig{
+		defaultPath: "./configs",
+		prodFlag: key,
+	}
+	AppConfig.read()
 }
 
 func (e *EnvConfig) GetOrDefault(key, defaultValue string) string {

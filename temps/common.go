@@ -61,6 +61,7 @@ package common
 
 import (
 	"math"
+	"context"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -82,7 +83,7 @@ type ResponsePagination struct {
 	Pages   uint        {{.BackTick}}json:"pages"{{.BackTick}}
 }
 
-func Pagination(db *gorm.DB, queryModel interface{}, responseObjectModel interface{}, page uint, size uint) (ResponsePagination, error) {
+func Pagination(db *gorm.DB, queryModel interface{}, responseObjectModel interface{}, page uint, size uint, tracer context.Context) (ResponsePagination, error) {
 	//  protection against requesting large amount of data
 	//  set to 50
 	var update_size uint
@@ -96,7 +97,11 @@ func Pagination(db *gorm.DB, queryModel interface{}, responseObjectModel interfa
 	//finding count value
 	go func() {
 		var local_counter int64
-		db.Select("id").Model(&queryModel).Count(&local_counter)
+		if tracer != nil {
+			db.WithContext(tracer).Select("id").Model(&queryModel).Count(&local_counter)
+		} else {
+			db.Select("id").Model(&queryModel).Count(&local_counter)
+		}
 		count_channel <- local_counter
 
 	}()
@@ -104,10 +109,22 @@ func Pagination(db *gorm.DB, queryModel interface{}, responseObjectModel interfa
 	var response_page int64
 	go func() {
 		if page == 1 {
-			db.Order("id asc").Limit(int(size)).Offset(0).Preload(clause.Associations).Find(&responseObjectModel)
+			if tracer != nil {
+				db.WithContext(tracer).Order("id asc").Limit(int(size)).Offset(0).Preload(clause.Associations).Find(&responseObjectModel)
+
+			} else {
+				db.Order("id asc").Limit(int(size)).Offset(0).Preload(clause.Associations).Find(&responseObjectModel)
+
+			}
+
 			response_page = 1
 		} else {
-			db.Order("id asc").Limit(int(size)).Offset(int(offset)).Preload(clause.Associations).Find(&responseObjectModel)
+			if tracer != nil {
+				db.WithContext(tracer).Order("id asc").Limit(int(size)).Offset(int(offset)).Preload(clause.Associations).Find(&responseObjectModel)
+
+			} else {
+				db.Order("id asc").Limit(int(size)).Offset(int(offset)).Preload(clause.Associations).Find(&responseObjectModel)
+			}
 			// response_channel <- loc_resp
 			response_page = int64(page)
 		}
@@ -116,7 +133,6 @@ func Pagination(db *gorm.DB, queryModel interface{}, responseObjectModel interfa
 	count := <-count_channel
 	response_obj := <-str_chann
 	pages := math.Ceil(float64(count) / float64(size))
-	
 
 	result := ResponsePagination{
 		Success: true,
@@ -130,7 +146,7 @@ func Pagination(db *gorm.DB, queryModel interface{}, responseObjectModel interfa
 	return result, nil
 }
 
-func PaginationPureModel(db *gorm.DB, queryModel interface{}, responseObjectModel interface{}, page uint, size uint) (ResponsePagination, error) {
+func PaginationPureModel(db *gorm.DB, queryModel interface{}, responseObjectModel interface{}, page uint, size uint, tracer context.Context) (ResponsePagination, error) {
 	if size > 50 {
 		size = 50
 	}
@@ -140,7 +156,11 @@ func PaginationPureModel(db *gorm.DB, queryModel interface{}, responseObjectMode
 	//finding count value
 	go func() {
 		var local_counter int64
-		db.Select("id").Model(&queryModel).Count(&local_counter)
+		if tracer != nil {
+			db.WithContext(tracer).Select("id").Model(&queryModel).Count(&local_counter)
+		} else {
+			db.Select("id").Model(&queryModel).Count(&local_counter)
+		}
 		count_channel <- local_counter
 
 	}()
@@ -148,10 +168,18 @@ func PaginationPureModel(db *gorm.DB, queryModel interface{}, responseObjectMode
 	var response_page int64
 	go func() {
 		if page == 1 {
-			db.Model(&queryModel).Order("id asc").Limit(int(size)).Offset(0).Find(&responseObjectModel)
+			if tracer != nil {
+				db.WithContext(tracer).Model(&queryModel).Order("id asc").Limit(int(size)).Offset(0).Find(&responseObjectModel)
+			} else {
+				db.Model(&queryModel).Order("id asc").Limit(int(size)).Offset(0).Find(&responseObjectModel)
+			}
 			response_page = 1
 		} else {
-			db.Model(&queryModel).Order("id asc").Limit(int(size)).Offset(int(offset)).Find(&responseObjectModel)
+			if tracer != nil {
+				db.WithContext(tracer).Model(&queryModel).Order("id asc").Limit(int(size)).Offset(int(offset)).Find(&responseObjectModel)
+			} else {
+				db.Model(&queryModel).Order("id asc").Limit(int(size)).Offset(int(offset)).Find(&responseObjectModel)
+			}
 			// response_channel <- loc_resp
 			response_page = int64(page)
 		}
@@ -172,4 +200,5 @@ func PaginationPureModel(db *gorm.DB, queryModel interface{}, responseObjectMode
 	}
 	return result, nil
 }
+
 `
