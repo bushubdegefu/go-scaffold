@@ -137,9 +137,8 @@ import (
 // @Router /{{.LowerName}} [get]
 func Get{{.Name}}s(contx *fiber.Ctx) error {
 
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Get{{.Name}}s-root")
+	// Starting tracer context and tracer	
+	tracer, span := observe.AppSpanner(contx.UserContext(), "Get{{.Name}}s-root")
 	defer span.End()
 
 	//  parsing Query Prameters
@@ -184,9 +183,8 @@ func Get{{.Name}}s(contx *fiber.Ctx) error {
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [get]
 func Get{{.Name}}ByID(contx *fiber.Ctx) error {
 
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Get{{.Name}}ByID-root")
+	// Starting tracer context and tracer	
+	tracer, span := observe.AppSpanner(contx.UserContext(), "Get{{.Name}}ByID-root")
 	defer span.End()
 
 	//  parsing Query Prameters
@@ -244,9 +242,9 @@ func Get{{.Name}}ByID(contx *fiber.Ctx) error {
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}s [post]
 func Post{{.Name}}(contx *fiber.Ctx) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Post{{.Name}}-root")
+
+	// Starting tracer context and tracer	
+	tracer, span := observe.AppSpanner(contx.UserContext(), "Post{{.Name}}-root")
 	defer span.End()	
 
 
@@ -320,9 +318,9 @@ func Post{{.Name}}(contx *fiber.Ctx) error {
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [patch]
 func Patch{{.Name}}(contx *fiber.Ctx) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Patch{{.Name}}-root")
+
+	// Starting tracer context and tracer	
+	tracer, span := observe.AppSpanner(contx.UserContext(), "Patch{{.Name}}-root")
 	defer span.End()
 
 	// Get database connection
@@ -416,9 +414,9 @@ func Patch{{.Name}}(contx *fiber.Ctx) error {
 // @Failure 503 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [delete]
 func Delete{{.Name}}(contx *fiber.Ctx) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Delete{{.Name}}-root")
+
+	// Starting tracer context and tracer	
+	tracer, span := observe.AppSpanner(contx.UserContext(), "Delete{{.Name}}-root")
 	defer span.End()
 
 
@@ -498,9 +496,9 @@ func Delete{{.Name}}(contx *fiber.Ctx) error {
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [post]
 func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
+
 	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Add{{.FieldName}}{{.ParentName}}s-root")
+	tracer, span := observe.AppSpanner(contx.UserContext(), "Add{{.FieldName}}{{.ParentName}}s-root")
 	defer span.End()	
 
 	// database connection
@@ -581,9 +579,9 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [delete]
 func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Delete{{.FieldName}}{{.ParentName}}s-root")
+
+	// Starting tracer context and tracer	
+	tracer, span := observe.AppSpanner(contx.UserContext(), "Delete{{.FieldName}}{{.ParentName}}s-root")
 	defer span.End()
 
 	//Connect to Database   
@@ -671,9 +669,8 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [patch]
 func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 	
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Add{{.FieldName}}{{.ParentName}}s-root")
+	// Starting tracer context and tracer	
+	tracer, span := observe.AppSpanner(contx.UserContext(), "Add{{.FieldName}}{{.ParentName}}s-root")
 	defer span.End()	
 
 	// connect
@@ -744,9 +741,9 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [delete]
 func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Delete{{.FieldName}}{{.ParentName}}s-root")
+
+	// Starting tracer context and tracer	
+	tracer, span := observe.AppSpanner(contx.UserContext(), "Delete{{.FieldName}}{{.ParentName}}s-root")
 	defer span.End()	
 
 	//  database connection

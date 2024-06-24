@@ -21,6 +21,7 @@ func basiccmd() {
 	temps.DbConnDataFrame()
 	temps.CommonFrame()
 	temps.TracerFrame()
+	temps.GitDockerFrame()
 }
 
 func init() {
