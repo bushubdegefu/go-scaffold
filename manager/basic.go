@@ -17,6 +17,7 @@ var (
 )
 
 func basiccmd() {
+	temps.LoadData()
 	temps.Frame()
 	temps.DbConnDataFrame()
 	temps.CommonFrame()

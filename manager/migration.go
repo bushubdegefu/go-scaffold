@@ -17,6 +17,7 @@ var (
 )
 
 func migrationmod() {
+	temps.LoadData()
 	temps.MigrationFrame()
 }
 

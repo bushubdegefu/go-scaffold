@@ -1,7 +1,6 @@
 package temps
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,29 +8,10 @@ import (
 )
 
 func Frame() {
-	// Open the JSON file
-	file, err := os.Open("config.json")
-	if err != nil {
-		fmt.Println("Error opening JSON file:", err)
-		return
-	}
-	defer file.Close() // Defer closing the file until the function returns
-
-	// Decode the JSON content into the data structure
-	var data Data
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&data)
-	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return
-	}
-
-	// #####################
-	// this is where using the data will come to existance
 
 	//  this is creating manger file inside the manager folder
 	// ############################################################
-	manager_tmpl, err := template.New("data").Parse(managerTemplate)
+	manager_tmpl, err := template.New("RenderData").Parse(managerTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -48,14 +28,14 @@ func Frame() {
 	}
 	defer manager_file.Close()
 
-	err = manager_tmpl.Execute(manager_file, data)
+	err = manager_tmpl.Execute(manager_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
 
 	//this is creating the main.go file
 	// ############################################################
-	main_tmpl, err := template.New("data").Parse(mainTemplate)
+	main_tmpl, err := template.New("RenderData").Parse(mainTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -72,14 +52,14 @@ func Frame() {
 	}
 	defer main_file.Close()
 
-	err = main_tmpl.Execute(main_file, data)
+	err = main_tmpl.Execute(main_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
 
 	//  this is creating .env and configuration file
 	// ############################################################
-	config_tmpl, err := template.New("data").Parse(configsTemplate)
+	config_tmpl, err := template.New("RenderData").Parse(configsTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -100,14 +80,14 @@ func Frame() {
 	}
 	defer config_file.Close()
 
-	err = config_tmpl.Execute(config_file, data)
+	err = config_tmpl.Execute(config_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
 
 	//  this is creating .env and configuration file
 	// ############################################################
-	env_tmpl, err := template.New("data").Parse(envTemplate)
+	env_tmpl, err := template.New("RenderData").Parse(envTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -124,19 +104,19 @@ func Frame() {
 	}
 	defer tenv_file.Close()
 
-	err = env_tmpl.Execute(tenv_file, data)
+	err = env_tmpl.Execute(tenv_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
 
-	err = env_tmpl.Execute(env_file, data)
+	err = env_tmpl.Execute(env_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
 
 	//  this is creating .env and configuration file
 	// ############################################################
-	devenv_tmpl, err := template.New("data").Parse(devenvTemplate)
+	devenv_tmpl, err := template.New("RenderData").Parse(devenvTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -147,13 +127,13 @@ func Frame() {
 	}
 	defer devenv_file.Close()
 
-	err = devenv_tmpl.Execute(devenv_file, data)
+	err = devenv_tmpl.Execute(devenv_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
 
 	// ############################################################
-	prodenv_tmpl, err := template.New("data").Parse(devenvTemplate)
+	prodenv_tmpl, err := template.New("RenderData").Parse(devenvTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -164,13 +144,13 @@ func Frame() {
 	}
 	defer prodenv_file.Close()
 
-	err = prodenv_tmpl.Execute(prodenv_file, data)
+	err = prodenv_tmpl.Execute(prodenv_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
 
 	// ##########################################################
-	testenv_tmpl, err := template.New("data").Parse(devenvTemplate)
+	testenv_tmpl, err := template.New("RenderData").Parse(devenvTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -181,7 +161,7 @@ func Frame() {
 	}
 	defer testenv_file.Close()
 
-	err = testenv_tmpl.Execute(testenv_file, data)
+	err = testenv_tmpl.Execute(testenv_file, RenderData)
 	if err != nil {
 		panic(err)
 	}

@@ -1,7 +1,6 @@
 package temps
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,25 +8,9 @@ import (
 )
 
 func CommonFrame() {
-	// Open the JSON file
-	file, err := os.Open("config.json")
-	if err != nil {
-		fmt.Println("Error opening JSON file:", err)
-		return
-	}
-	defer file.Close() // Defer closing the file until the function returns
-
-	// Decode the JSON content into the data structure
-	var data Data
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&data)
-	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return
-	}
 
 	// ############################################################
-	common_tmpl, err := template.New("data").Parse(commonTemplate)
+	common_tmpl, err := template.New("RenderData").Parse(commonTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -44,7 +27,7 @@ func CommonFrame() {
 	}
 	defer common_file.Close()
 
-	err = common_tmpl.Execute(common_file, data)
+	err = common_tmpl.Execute(common_file, RenderData)
 	if err != nil {
 		panic(err)
 	}

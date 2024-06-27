@@ -17,6 +17,7 @@ var (
 )
 
 func echogen() {
+	temps.LoadData()
 	temps.EchoFrame()
 }
 

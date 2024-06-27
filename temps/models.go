@@ -129,48 +129,9 @@ func ModelDataFrame() {
 
 func DbConnDataFrame() {
 
-	// Open the JSON file
-	file, err := os.Open("config.json")
-	if err != nil {
-		fmt.Println("Error opening JSON file:", err)
-		return
-	}
-	defer file.Close() // Defer closing the file until the function returns
-
-	// Decode the JSON content into the data structure
-	var data Data
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&data)
-	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return
-	}
-	// setting default value for config data file
-	//  Get$Post$Patch$Put$OnetoMany$ManytoMany
-	// "Get$Post$Patch$Put$OtM$MtM"
-
-	for i := 0; i < len(data.Models); i++ {
-		data.Models[i].LowerName = strings.ToLower(data.Models[i].Name)
-		data.Models[i].AppName = data.AppName
-		data.Models[i].ProjectName = data.ProjectName
-
-		for j := 0; j < len(data.Models[i].Fields); j++ {
-			data.Models[i].Fields[j].BackTick = "`"
-			cf := strings.Split(data.Models[i].Fields[j].CurdFlag, "$")
-
-			data.Models[i].Fields[j].Get, _ = strconv.ParseBool(cf[0])
-			data.Models[i].Fields[j].Post, _ = strconv.ParseBool(cf[1])
-			data.Models[i].Fields[j].Patch, _ = strconv.ParseBool(cf[2])
-			data.Models[i].Fields[j].Put, _ = strconv.ParseBool(cf[3])
-			data.Models[i].Fields[j].AppName = data.AppName
-			data.Models[i].Fields[j].ProjectName = data.ProjectName
-
-		}
-	}
-
 	//  creating database connection folder
 	// ############################################################
-	database_tmpl, err := template.New("data").Parse(databaseTemplate)
+	database_tmpl, err := template.New("RenderData").Parse(databaseTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -187,7 +148,7 @@ func DbConnDataFrame() {
 	}
 	defer database_conn_file.Close()
 
-	err = database_tmpl.Execute(database_conn_file, data)
+	err = database_tmpl.Execute(database_conn_file, RenderData)
 	if err != nil {
 		panic(err)
 	}

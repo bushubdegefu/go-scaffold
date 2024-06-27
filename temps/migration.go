@@ -1,7 +1,6 @@
 package temps
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,26 +8,9 @@ import (
 )
 
 func MigrationFrame() {
-	// Open the JSON file
-	file, err := os.Open("config.json")
-	if err != nil {
-		fmt.Println("Error opening JSON file:", err)
-		return
-	}
-	defer file.Close() // Defer closing the file until the function returns
-
-	// Decode the JSON content into the data structure
-	var data Data
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&data)
-	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return
-	}
-
 	//  this is creating manger file inside the manager folder
 	// ############################################################
-	migration_tmpl, err := template.New("data").Parse(migrationTemplate)
+	migration_tmpl, err := template.New("RenderData").Parse(migrationTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +27,7 @@ func MigrationFrame() {
 	}
 	defer migration_file.Close()
 
-	err = migration_tmpl.Execute(migration_file, data)
+	err = migration_tmpl.Execute(migration_file, RenderData)
 	if err != nil {
 		panic(err)
 	}

@@ -1,7 +1,6 @@
 package temps
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,25 +8,9 @@ import (
 )
 
 func GitDockerFrame() {
-	// Open the JSON file
-	file, err := os.Open("config.json")
-	if err != nil {
-		fmt.Println("Error opening JSON file:", err)
-		return
-	}
-	defer file.Close() // Defer closing the file until the function returns
-
-	// Decode the JSON content into the data structure
-	var data Data
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&data)
-	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return
-	}
 
 	// ############################################################
-	docker_tmpl, err := template.New("data").Parse(dockerConfig)
+	docker_tmpl, err := template.New("RenderData").Parse(dockerConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -38,13 +21,13 @@ func GitDockerFrame() {
 	}
 	defer docker_file.Close()
 
-	err = docker_tmpl.Execute(docker_file, data)
+	err = docker_tmpl.Execute(docker_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
 
 	// ############################################################
-	git_tmpl, err := template.New("data").Parse(gitIgnore)
+	git_tmpl, err := template.New("RenderData").Parse(gitIgnore)
 	if err != nil {
 		panic(err)
 	}
@@ -55,13 +38,13 @@ func GitDockerFrame() {
 	}
 	defer git_file.Close()
 
-	err = git_tmpl.Execute(git_file, data)
+	err = git_tmpl.Execute(git_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
 
 	// ############################################################
-	dockig_tmpl, err := template.New("data").Parse(dockerIgnore)
+	dockig_tmpl, err := template.New("RenderData").Parse(dockerIgnore)
 	if err != nil {
 		panic(err)
 	}
@@ -72,7 +55,7 @@ func GitDockerFrame() {
 	}
 	defer dockig_file.Close()
 
-	err = dockig_tmpl.Execute(dockig_file, data)
+	err = dockig_tmpl.Execute(dockig_file, RenderData)
 	if err != nil {
 		panic(err)
 	}

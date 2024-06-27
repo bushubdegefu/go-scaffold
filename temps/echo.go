@@ -1,76 +1,16 @@
 package temps
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
-	"strings"
 	"text/template"
 )
 
 func EchoFrame() {
-	// Open the JSON file
-	file, err := os.Open("config.json")
-	if err != nil {
-		fmt.Println("Error opening JSON file:", err)
-		return
-	}
-	defer file.Close() // Defer closing the file until the function returns
-
-	// Decode the JSON content into the data structure
-	var data Data
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&data)
-	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return
-	}
-	// setting default value for config data file
-	//  GetPostPatchPut
-	// "Get$Post$Patch$Put"
-
-	for i := 0; i < len(data.Models); i++ {
-		data.Models[i].LowerName = strings.ToLower(data.Models[i].Name)
-		data.Models[i].AppName = data.AppName
-		data.Models[i].ProjectName = data.ProjectName
-		rl_list := make([]Relationship, 0)
-		for k := 0; k < len(data.Models[i].RlnModel); k++ {
-			rmf := strings.Split(data.Models[i].RlnModel[k], "$")
-			cur_relation := Relationship{
-				ParentName:      data.Models[i].Name,
-				LowerParentName: data.Models[i].LowerName,
-				FieldName:       rmf[0],
-				LowerFieldName:  strings.ToLower(rmf[0]),
-				MtM:             rmf[1] == "mtm",
-				OtM:             rmf[1] == "otm",
-				MtO:             rmf[1] == "mto",
-			}
-			rl_list = append(rl_list, cur_relation)
-			data.Models[i].Relations = rl_list
-		}
-
-		for j := 0; j < len(data.Models[i].Fields); j++ {
-			data.Models[i].Fields[j].BackTick = "`"
-			cf := strings.Split(data.Models[i].Fields[j].CurdFlag, "$")
-
-			data.Models[i].Fields[j].Get, _ = strconv.ParseBool(cf[0])
-			data.Models[i].Fields[j].Post, _ = strconv.ParseBool(cf[1])
-			data.Models[i].Fields[j].Patch, _ = strconv.ParseBool(cf[2])
-			data.Models[i].Fields[j].Put, _ = strconv.ParseBool(cf[3])
-			data.Models[i].Fields[j].AppName = data.AppName
-			data.Models[i].Fields[j].ProjectName = data.ProjectName
-
-		}
-	}
-
-	// #####################
-	// this is where using the data will come to existance
-
 	//  this is creating manger file inside the manager folder
 	// ############################################################
-	echo_tmpl, err := template.New("data").Parse(devechoTemplate)
+	echo_tmpl, err := template.New("RenderData").Parse(devechoTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -87,14 +27,14 @@ func EchoFrame() {
 	}
 	defer devecho_file.Close()
 
-	err = echo_tmpl.Execute(devecho_file, data)
+	err = echo_tmpl.Execute(devecho_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
 
 	// ##########################################
 
-	prod_tmpl, err := template.New("data").Parse(prodEchoTemplate)
+	prod_tmpl, err := template.New("RenderData").Parse(prodEchoTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -105,7 +45,7 @@ func EchoFrame() {
 	}
 	defer prod_file.Close()
 
-	err = prod_tmpl.Execute(prod_file, data)
+	err = prod_tmpl.Execute(prod_file, RenderData)
 	if err != nil {
 		panic(err)
 	}

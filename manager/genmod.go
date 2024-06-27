@@ -25,6 +25,7 @@ var (
 )
 
 func genecho() {
+	temps.LoadData()
 	temps.ModelDataFrame()
 	temps.DbConnDataFrame()
 	temps.CurdFrameEcho()
