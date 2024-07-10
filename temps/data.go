@@ -65,7 +65,7 @@ func LoadData() {
 	defer file.Close() // Defer closing the file until the function returns
 
 	// Decode the JSON content into the data structure
-	var data Data
+
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&RenderData)
 	if err != nil {
@@ -76,16 +76,16 @@ func LoadData() {
 	//  GetPostPatchPut
 	// "Get$Post$Patch$Put$OtM$MtM"
 
-	for i := 0; i < len(data.Models); i++ {
-		data.Models[i].LowerName = strings.ToLower(data.Models[i].Name)
-		data.Models[i].AppName = data.AppName
-		data.Models[i].ProjectName = data.ProjectName
+	for i := 0; i < len(RenderData.Models); i++ {
+		RenderData.Models[i].LowerName = strings.ToLower(RenderData.Models[i].Name)
+		RenderData.Models[i].AppName = RenderData.AppName
+		RenderData.Models[i].ProjectName = RenderData.ProjectName
 		rl_list := make([]Relationship, 0)
-		for k := 0; k < len(data.Models[i].RlnModel); k++ {
-			rmf := strings.Split(data.Models[i].RlnModel[k], "$")
+		for k := 0; k < len(RenderData.Models[i].RlnModel); k++ {
+			rmf := strings.Split(RenderData.Models[i].RlnModel[k], "$")
 			cur_relation := Relationship{
-				ParentName:      data.Models[i].Name,
-				LowerParentName: data.Models[i].LowerName,
+				ParentName:      RenderData.Models[i].Name,
+				LowerParentName: RenderData.Models[i].LowerName,
 				FieldName:       rmf[0],
 				LowerFieldName:  strings.ToLower(rmf[0]),
 				MtM:             rmf[1] == "mtm",
@@ -93,19 +93,19 @@ func LoadData() {
 				MtO:             rmf[1] == "mto",
 			}
 			rl_list = append(rl_list, cur_relation)
-			data.Models[i].Relations = rl_list
+			RenderData.Models[i].Relations = rl_list
 		}
 
-		for j := 0; j < len(data.Models[i].Fields); j++ {
-			data.Models[i].Fields[j].BackTick = "`"
-			cf := strings.Split(data.Models[i].Fields[j].CurdFlag, "$")
+		for j := 0; j < len(RenderData.Models[i].Fields); j++ {
+			RenderData.Models[i].Fields[j].BackTick = "`"
+			cf := strings.Split(RenderData.Models[i].Fields[j].CurdFlag, "$")
 
-			data.Models[i].Fields[j].Get, _ = strconv.ParseBool(cf[0])
-			data.Models[i].Fields[j].Post, _ = strconv.ParseBool(cf[1])
-			data.Models[i].Fields[j].Patch, _ = strconv.ParseBool(cf[2])
-			data.Models[i].Fields[j].Put, _ = strconv.ParseBool(cf[3])
-			data.Models[i].Fields[j].AppName = data.AppName
-			data.Models[i].Fields[j].ProjectName = data.ProjectName
+			RenderData.Models[i].Fields[j].Get, _ = strconv.ParseBool(cf[0])
+			RenderData.Models[i].Fields[j].Post, _ = strconv.ParseBool(cf[1])
+			RenderData.Models[i].Fields[j].Patch, _ = strconv.ParseBool(cf[2])
+			RenderData.Models[i].Fields[j].Put, _ = strconv.ParseBool(cf[3])
+			RenderData.Models[i].Fields[j].AppName = RenderData.AppName
+			RenderData.Models[i].Fields[j].ProjectName = RenderData.ProjectName
 
 		}
 	}

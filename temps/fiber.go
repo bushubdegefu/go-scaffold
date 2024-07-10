@@ -23,29 +23,34 @@ func FiberFrame() {
 
 	devf_file, err := os.Create("manager/devfiber.go")
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 	defer devf_file.Close()
 
 	err = devf_tmpl.Execute(devf_file, RenderData)
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 
 	// #################################################
 	prod_tmpl, err := template.New("RenderData").Parse(prodTemplate)
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 
 	prod_file, err := os.Create("manager/prodfiber.go")
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 	defer prod_file.Close()
 
 	err = prod_tmpl.Execute(prod_file, RenderData)
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 
@@ -56,6 +61,8 @@ func FiberFrame() {
 
 }
 
+// https://help.sumologic.com/docs/apm/traces/get-started-transaction-tracing/opentelemetry-instrumentation/go/
+
 var devfTemplate = `
 package manager
 
@@ -63,6 +70,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"fmt"
 	"log"
 	"strconv"
@@ -87,6 +95,7 @@ import (
 	"{{.ProjectName}}.com/observe"
 	"{{.ProjectName}}.com/models/controllers"
 	_ "{{.ProjectName}}.com/docs"
+	"{{.ProjectName}}.com/database"
 	"github.com/spf13/cobra"
 )
 
@@ -101,6 +110,27 @@ var (
 	}
 )
 
+func otelspanstarter(ctx *fiber.Ctx) error {
+	trace_id := ctx.Get("traceID")
+	
+	//  creating trace context from span if they exist
+	route_name := ctx.Path() + "_" + strings.ToLower(ctx.Route().Method)
+	tracer, span := observe.FiberAppSpanner(ctx, fmt.Sprintf("%v-root", route_name), trace_id)
+	ctx.Locals("tracer", &observe.RouteTracer{Tracer: tracer, Span: span})
+
+
+	return ctx.Next()
+}
+
+func dbsessioninjection(ctx *fiber.Ctx) error {
+	db := database.ReturnSession()
+	ctx.Locals("db", db)
+	return ctx.Next()
+}
+
+func NextFunc(contx *fiber.Ctx) error {
+	return contx.Next()
+}
 
 func fiber_run() {
 		configs.AppConfig.SetEnv("dev")
@@ -142,6 +172,7 @@ func fiber_run() {
 				return nil
 			},
 		})
+
 		//  rate limiting middleware
 		app.Use(limiter.New(limiter.Config{
 			Max:               rate_limit_per_second,
@@ -150,6 +181,11 @@ func fiber_run() {
 		}))
 		//app logging open telemetery
 		app.Use(otelfiber.Middleware())
+		app.Use(otelspanstarter)
+
+		// database session injection to local context
+		app.Use(dbsessioninjection)
+
 
 		// idempotency middleware
 		app.Use(idempotency.New(idempotency.Config{
@@ -223,9 +259,6 @@ func init() {
 
 }
 
-func NextFunc(contx *fiber.Ctx) error {
-	return contx.Next()
-}
 
 func setupRoutes(gapp *fiber.Group) {
 	
@@ -256,8 +289,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"strconv"
 	"time"
+	
 
 	
 	"os"
@@ -276,6 +311,7 @@ import (
 	"github.com/gofiber/swagger"
 	"{{.ProjectName}}.com/configs"
 	"{{.ProjectName}}.com/observe"
+	"{{.ProjectName}}.com/database"
 	_ "{{.ProjectName}}.com/docs"
 	"{{.ProjectName}}.com/models/controllers"
 	"github.com/spf13/cobra"
@@ -292,6 +328,27 @@ var (
 	}
 )
 
+func otelspanstarterprod(ctx *fiber.Ctx) error {
+	trace_id := ctx.Get("traceID")
+	
+	//  creating trace context from span if they exist
+	route_name := ctx.Path() + "_" + strings.ToLower(ctx.Route().Method)
+	tracer, span := observe.FiberAppSpanner(ctx, fmt.Sprintf("%v-root", route_name), trace_id)
+	ctx.Locals("tracer", &observe.RouteTracer{Tracer: tracer, Span: span})
+
+
+	return ctx.Next()
+}
+
+func NextProdFunc(contx *fiber.Ctx) error {
+	return contx.Next()
+}
+
+func dbsessioninjectionprod(ctx *fiber.Ctx) error {
+	db := database.ReturnSession()
+	ctx.Locals("db", db)
+	return ctx.Next()
+}
 
 func prod_run() {
 		configs.AppConfig.SetEnv("prod")
@@ -341,6 +398,10 @@ func prod_run() {
 		}))
 		//app logging open telemetery
 		app.Use(otelfiber.Middleware())
+		app.Use(otelspanstarterprod)
+
+		// database session injection to local context
+		app.Use(dbsessioninjectionprod)
 
 		// idempotency middleware
 		app.Use(idempotency.New(idempotency.Config{
@@ -412,10 +473,6 @@ func prod_run() {
 func init() {
 	goFrame.AddCommand({{.AppName}}prodcli)
 
-}
-
-func NextProdFunc(contx *fiber.Ctx) error {
-	return contx.Next()
 }
 
 func setupProdRoutes(gapp *fiber.Group) {

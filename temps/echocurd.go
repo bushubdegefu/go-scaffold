@@ -105,7 +105,7 @@ func Get{{.Name}}s(contx echo.Context) error {
 	if err != nil {
 		return contx.JSON(http.StatusInternalServerError, common.ResponseHTTP{
 			Success: false,
-			Message: "Success get all {{.Name}}.",
+			Message: "Failed to get all {{.Name}}.",
 			Data:    "something",
 		})
 	}

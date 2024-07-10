@@ -335,7 +335,7 @@ POSTGRES_URI="host=localhost user=blueuser password=default dbname=learning_one 
 #SQLLITE_URI="goframe.db"
 
 #Messeage qeue settings specifically rabbit
-RABBIT_URI="amqps://fldooyrt:bQLS-hvGReUQPy_kUSexUYOhzJHwf08u@lionfish.rmq.cloudamqp.com:5671/fldooyrt"
+RABBIT_URI="amqps://xrqlluoo:4hAUYGqztMsWyFdT5r65j4xudTw-AWl1@puffin.rmq2.cloudamqp.com/xrqlluoo"
 
 # JWT token settings 
 JWT_SALT_LIFE_TIME=60 #in minutes

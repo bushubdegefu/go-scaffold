@@ -81,9 +81,9 @@ func Pagination(db *gorm.DB, queryModel interface{}, responseObjectModel interfa
 	go func() {
 		var local_counter int64
 		if tracer != nil {
-			db.WithContext(tracer).Select("id").Model(&queryModel).Count(&local_counter)
+			db.WithContext(tracer).Select("*").Model(&queryModel).Count(&local_counter)
 		} else {
-			db.Select("id").Model(&queryModel).Count(&local_counter)
+			db.Select("*").Model(&queryModel).Count(&local_counter)
 		}
 		count_channel <- local_counter
 
@@ -140,9 +140,9 @@ func PaginationPureModel(db *gorm.DB, queryModel interface{}, responseObjectMode
 	go func() {
 		var local_counter int64
 		if tracer != nil {
-			db.WithContext(tracer).Select("id").Model(&queryModel).Count(&local_counter)
+			db.WithContext(tracer).Select("*").Model(&queryModel).Count(&local_counter)
 		} else {
-			db.Select("id").Model(&queryModel).Count(&local_counter)
+			db.Select("*").Model(&queryModel).Count(&local_counter)
 		}
 		count_channel <- local_counter
 

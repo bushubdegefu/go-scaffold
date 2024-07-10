@@ -33,6 +33,7 @@ func genecho() {
 }
 
 func genfiber() {
+	temps.LoadData()
 	temps.ModelDataFrame()
 	temps.CurdFrameFiber()
 	temps.TestFrameFiber()
