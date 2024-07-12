@@ -215,6 +215,51 @@ func PublishMessage(posted_message SampleMessage) error {
 	}
 	return nil
 }
+
+// //  Injecting OtelDetails to Header for tracing
+// header := make(map[string][]string)
+// propagator := propagation.TraceContext{}
+// propagator.Inject(tracer.Tracer, propagation.HeaderCarrier(header))
+//  use the header above to assign value to tp when initalizing the request object below
+
+type RequestObject struct {
+	Host     string
+	Endpoint string
+	Method   string
+	Body     string
+	Tp       map[string][]string
+}
+
+func PublishRequest(req RequestObject) error {
+
+	//   connection and channels from rabbitmq
+	connection, channel, _ := BrokerConnect()
+	defer connection.Close()
+	defer channel.Close()
+
+	//
+	request, _ := json.Marshal(req)
+	message := amqp.Publishing{
+		ContentType: "application/json",
+		Body:        []byte(request),
+		Type:        "REQUEST",
+	}
+
+	//send to rabbit app module qeue using channel
+	// Attempt to publish a message to the queue.
+	if err := channel.Publish(
+		"",      // exchange
+		"esb",   // queue name
+		false,   // mandatory
+		false,   // immediate
+		message, // message to publish
+	); err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	return nil
+}
+
 `
 
 var constumerBasicTemplate = `
@@ -243,6 +288,7 @@ func RabbitConsumer() {
 			log.Printf("Error shutting down tracer provider: %v", err)
 		}
 	}()
+		
 	// Getting app connection and channel
 	connection, channel, err := BrokerConnect()
 	if err != nil {
@@ -274,9 +320,10 @@ func RabbitConsumer() {
 	// Process received messages based on their types
 	// Using a goroutine for asynchronous message consumption
 	go func() {
+		ctx := context.Background()
+
 		for msg := range msgs {
 			// Extract the span context out of the AMQP header.
-		
 			switch msg.Type {
 			case "BULK_MAIL":    // make sure provide the type in the published message so to switch
 				var message sample_message
@@ -286,6 +333,45 @@ func RabbitConsumer() {
 					continue
 				}
 				fmt.Println(message)
+			case "REQUEST":
+				var reqData RequestObject
+				err := json.Unmarshal(msg.Body, &reqData)
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+					
+				// extracting request from otel propagator
+				propagator := propagation.TraceContext{}
+				ctx = propagator.Extract(ctx, propagation.HeaderCarrier(reqData.Tp))
+
+				// starting span for http client request
+				trace, span := observe.AppTracer.Start(ctx, fmt.Sprintf("started %v", rand.Intn(100)))
+
+				// client with otel http middleware
+				client := http.Client{
+					Transport: otelhttp.NewTransport(
+						http.DefaultTransport,
+						// By setting the otelhttptrace client in this transport, it can be
+						// injected into the context after the span is started, which makes the
+						// httptrace spans children of the transport one.
+						otelhttp.WithClientTrace(func(ctx context.Context) *httptrace.ClientTrace {
+							return otelhttptrace.NewClientTrace(ctx)
+						}),
+					),
+				}
+
+				// Build request to be sent
+				req, _ := http.NewRequestWithContext(trace, reqData.Method, fmt.Sprintf("http://%v%v", reqData.Host, reqData.Endpoint), nil)
+
+
+				//  performing the request
+				resp, err := client.Do(req)
+				if err != nil {
+					fmt.Printf("failed to perform request: %v", err)
+				}
+
+				span.End()
+				resp.Body.Close()
 			default:
 				fmt.Println("Unknown Task Type")
 			}

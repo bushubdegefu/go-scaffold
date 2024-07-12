@@ -85,7 +85,7 @@ func Get{{.Name}}s(contx *fiber.Ctx) error {
 	//  Getting tracer context 
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	defer tracer.Span.End()
+	
 
 	//  Getting Database connection
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -133,7 +133,7 @@ func Get{{.Name}}ByID(contx *fiber.Ctx) error {
 	// Starting tracer context and tracer	
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	defer tracer.Span.End()
+	
 
 	//  Getting Database connection
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -195,7 +195,7 @@ func Post{{.Name}}(contx *fiber.Ctx) error {
 	// Starting tracer context and tracer	
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	defer tracer.Span.End()	
+		
 
 	// Getting Database Connection
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -272,7 +272,7 @@ func Patch{{.Name}}(contx *fiber.Ctx) error {
 	// Starting tracer context and tracer	
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	defer tracer.Span.End()
+	
 
 	// Get database connection
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -369,7 +369,7 @@ func Delete{{.Name}}(contx *fiber.Ctx) error {
 	// Starting tracer context and tracer	
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	defer tracer.Span.End()
+	
 
 	// Getting Database connection 
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -452,7 +452,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 	// Starting tracer context and tracer
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	defer tracer.Span.End()	
+		
 
 	// database connection
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -536,7 +536,7 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 	// Starting tracer context and tracer	
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	defer tracer.Span.End()
+	
 
 	//Connect to Database   
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -626,7 +626,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 	// Starting tracer context and tracer	
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	defer tracer.Span.End()	
+		
 
 	// connect
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -700,7 +700,7 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 	// Starting tracer context and tracer	
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	defer tracer.Span.End()	
+		
 
 	//  database connection
 	db, _ := contx.Locals("db").(*gorm.DB)

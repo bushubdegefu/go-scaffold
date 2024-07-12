@@ -90,6 +90,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"go.opentelemetry.io/otel/attribute"
 	"github.com/gofiber/swagger"
 	"{{.ProjectName}}.com/configs"
 	"{{.ProjectName}}.com/observe"
@@ -111,15 +112,16 @@ var (
 )
 
 func otelspanstarter(ctx *fiber.Ctx) error {
-	trace_id := ctx.Get("traceID")
-	
 	//  creating trace context from span if they exist
 	route_name := ctx.Path() + "_" + strings.ToLower(ctx.Route().Method)
-	tracer, span := observe.FiberAppSpanner(ctx, fmt.Sprintf("%v-root", route_name), trace_id)
+	tracer, span := observe.FiberAppSpanner(ctx, fmt.Sprintf("%v-root", route_name))
 	ctx.Locals("tracer", &observe.RouteTracer{Tracer: tracer, Span: span})
-
-
-	return ctx.Next()
+	if err := ctx.Next(); err != nil {
+		return err
+	}
+	span.SetAttributes(attribute.String("response", ctx.Response().String()))
+	span.End()
+	return nil
 }
 
 func dbsessioninjection(ctx *fiber.Ctx) error {
@@ -308,6 +310,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"go.opentelemetry.io/otel/attribute"
 	"github.com/gofiber/swagger"
 	"{{.ProjectName}}.com/configs"
 	"{{.ProjectName}}.com/observe"
@@ -329,15 +332,16 @@ var (
 )
 
 func otelspanstarterprod(ctx *fiber.Ctx) error {
-	trace_id := ctx.Get("traceID")
-	
 	//  creating trace context from span if they exist
 	route_name := ctx.Path() + "_" + strings.ToLower(ctx.Route().Method)
-	tracer, span := observe.FiberAppSpanner(ctx, fmt.Sprintf("%v-root", route_name), trace_id)
+	tracer, span := observe.FiberAppSpanner(ctx, fmt.Sprintf("%v-root", route_name))
 	ctx.Locals("tracer", &observe.RouteTracer{Tracer: tracer, Span: span})
-
-
-	return ctx.Next()
+	if err := ctx.Next(); err != nil {
+		return err
+	}
+	span.SetAttributes(attribute.String("response", ctx.Response().String()))
+	span.End()
+	return nil
 }
 
 func NextProdFunc(contx *fiber.Ctx) error {

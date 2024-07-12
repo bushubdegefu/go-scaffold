@@ -153,7 +153,7 @@ func InitTracer() *sdktrace.TracerProvider {
 }
 
 
-func FiberAppSpanner(ctx *fiber.Ctx, span_name string, trace_id string) (context.Context, oteltrace.Span) {
+func FiberAppSpanner(ctx *fiber.Ctx, span_name string ) (context.Context, oteltrace.Span) {
 	gen, _ := uuid.NewV7()
 	id := gen.String()
 	
@@ -236,7 +236,7 @@ func InitTracer() *sdktrace.TracerProvider {
 	return tp
 }
 
-func AppSpanner(ctx context.Context, span_name string, trace_id string) (context.Context, oteltrace.Span) {
+func AppSpanner(ctx context.Context, span_name string) (context.Context, oteltrace.Span) {
 	gen, _ := uuid.NewV7()
 	id := gen.String()
 
