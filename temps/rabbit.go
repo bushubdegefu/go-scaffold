@@ -271,6 +271,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 
 	"{{.ProjectName}}.com/configs"
 	"{{.ProjectName}}.com/observe"
@@ -319,7 +321,7 @@ func RabbitConsumer() {
 
 	// Process received messages based on their types
 	// Using a goroutine for asynchronous message consumption
-	go func() {
+	go func(msg <-chan amqp.Delivery) {
 		ctx := context.Background()
 
 		for msg := range msgs {
@@ -364,19 +366,34 @@ func RabbitConsumer() {
 				req, _ := http.NewRequestWithContext(trace, reqData.Method, fmt.Sprintf("http://%v%v", reqData.Host, reqData.Endpoint), nil)
 
 
+				// generating uuid
+				gen, _ := uuid.NewV7()
+				id := gen.String()
 				//  performing the request
+				req_body := fmt.Sprintf("Method: %v\t %v \nBody: %v\n", req.Method, req.URL, req.Body)
 				resp, err := client.Do(req)
 				if err != nil {
-					fmt.Printf("failed to perform request: %v", err)
+					fmt.Printf("failed to perform request: %v\n", err)
+					span.SetAttributes(attribute.String("esb-id", id))
+					span.SetAttributes(attribute.String("esb-request", req_body))
+					span.SetAttributes(attribute.String("esb-error", err.Error()))
+					span.End()
+					break
 				}
+				//
+
+				body, _ := io.ReadAll(resp.Body)
+				span.SetAttributes(attribute.String("esb-id", id))
+				span.SetAttributes(attribute.String("esb-request", req_body))
+				span.SetAttributes(attribute.String("esb-response", string(body)))
 
 				span.End()
-				resp.Body.Close()
+				
 			default:
 				fmt.Println("Unknown Task Type")
 			}
 		}
-	}()
+	}(msgs)
 
 	fmt.Println("Waiting for messages...")
 	select {}
