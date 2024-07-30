@@ -85,7 +85,6 @@ import (
 	"github.com/gofiber/contrib/otelfiber"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"github.com/gofiber/fiber/v2/middleware/earlydata"
 	"github.com/gofiber/fiber/v2/middleware/idempotency"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
@@ -194,11 +193,6 @@ func fiber_run() {
 			Lifetime: 10 * time.Second,
 				}))
 
-		// early data midllware 
-		app.Use(earlydata.New(earlydata.Config{
-				Error: fiber.ErrTooEarly,
-				// ...
-			}))
 
 		// logger middle ware with the custom file writer object
 		app.Use(logger.New(logger.Config{
@@ -305,7 +299,6 @@ import (
 	"github.com/gofiber/contrib/otelfiber"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"github.com/gofiber/fiber/v2/middleware/earlydata"
 	"github.com/gofiber/fiber/v2/middleware/idempotency"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
@@ -394,6 +387,8 @@ func prod_run() {
 				return nil
 			},
 		})
+
+		
 		//  rate limiting middleware
 		app.Use(limiter.New(limiter.Config{
 			Max:               rate_limit_per_second,
@@ -412,12 +407,7 @@ func prod_run() {
 			Lifetime: 10 * time.Second,
 				}))
 
-		// early data midllware 
-		app.Use(earlydata.New(earlydata.Config{
-				Error: fiber.ErrTooEarly,
-				// ...
-			}))
-
+	
 		// logger middle ware with the custom file writer object
 		app.Use(logger.New(logger.Config{
 			Format:     "\n${cyan}-[${time}]-[${ip}] -${white}${pid} ${red}${status} ${blue}[${method}] ${white}-${path}\n [${body}]\n[${error}]\n[${resBody}]\n[${reqHeaders}]\n[${queryParams}]\n",
