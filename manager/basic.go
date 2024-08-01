@@ -26,10 +26,19 @@ var (
 
 	standardrabbit = &cobra.Command{
 		Use:   "rabbit",
-		Short: "generate basic folder structure for project standard rabbit connection and consumer, generic structure",
+		Short: "generate basic folder structure for project standard rabbit connection,publisher and consumer, generic structure",
 		Long:  `Generate basic folder structure for your project.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			standrabbit()
+		},
+	}
+
+	standarpubcli = &cobra.Command{
+		Use:   "publish",
+		Short: "generate basic folder structure for project standard rabbit connection and publisher, generic structure",
+		Long:  `Generate basic folder structure for your project.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			standpublish()
 		},
 	}
 )
@@ -63,9 +72,17 @@ func standrabbit() {
 	temps.RunConsumeFrame()
 
 }
+func standpublish() {
+	temps.LoadData()
+	temps.Frame()
+	temps.RabbitFrame()
+	temps.PublishFrame()
+
+}
 
 func init() {
 	goFrame.AddCommand(basicstruct)
 	goFrame.AddCommand(standardstruct)
 	goFrame.AddCommand(standardrabbit)
+	goFrame.AddCommand(standarpubcli)
 }
