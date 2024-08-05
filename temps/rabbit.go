@@ -1,6 +1,7 @@
 package temps
 
 import (
+	"fmt"
 	"os"
 	"text/template"
 )
@@ -36,6 +37,32 @@ func PublishFrame() {
 	//  rabbit template
 	rab_tmpl, err := template.New("RenderData").Parse(pusbsttuctTemplate)
 	if err != nil {
+		fmt.Printf("PublishFrame-1: %v\n", err)
+	}
+
+	// Create the models directory if it does not exist
+	err = os.MkdirAll("messages", os.ModePerm)
+	if err != nil {
+		fmt.Printf("PublishFrame -2 : %v\n", err)
+	}
+
+	rab_file, err := os.Create("messages/publishers.go")
+	if err != nil {
+		fmt.Printf("PublishFrame -3: %v\n", err)
+	}
+	defer rab_file.Close()
+
+	err = rab_tmpl.Execute(rab_file, RenderData)
+	if err != nil {
+		fmt.Printf("PublishFrame -4: %v\n", err)
+	}
+}
+
+func CommonRabbitFrame() {
+	// ####################################################
+	//  rabbit template
+	rab_tmpl, err := template.New("RenderData").Parse(commonStructsTemplate)
+	if err != nil {
 		panic(err)
 	}
 
@@ -45,7 +72,7 @@ func PublishFrame() {
 		panic(err)
 	}
 
-	rab_file, err := os.Create("messages/publishers.go")
+	rab_file, err := os.Create("messages/common.go")
 	if err != nil {
 		panic(err)
 	}
@@ -110,7 +137,7 @@ func RunConsumeFrame() {
 }
 
 var rabbitConnectionTemplate = `
-package rabbit
+package messages
 
 import (
 	"crypto/tls"
@@ -120,55 +147,10 @@ import (
 	"{{.ProjectName}}.com/configs"
 )
 
-// creating connection to the rabbit message broker
-// returns the connection based on the connection string
-// needs to be closed after using by functions using it
-// returns connection and channel struct
-func BrokerConnect() (*amqp.Connection, *amqp.Channel, error) {
-
-	con_str := configs.AppConfig.Get("RABBIT_URI")
-
-	// RabbitMQ TLS configuration
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true, // Set to false for production use
-	}
-
-	// Dial RabbitMQ server with TLS
-	connection, err := amqp.DialTLS(con_str, tlsConfig)
-	if err != nil {
-		fmt.Printf("connectin to %v failed due to : %v \n", con_str, err)
-	}
-
-	// creating a channel to create a queue
-	// instance over the connection we have already
-	// established.
-	channel, err := connection.Channel()
-	if err != nil {
-		fmt.Printf("connectin to channel failed due to : %v\n", err)
-	}
-
-	// With the instance and declare Queues that we can
-	// publish and subscribe to.
-	_, err = channel.QueueDeclare(
-		"{{.ProjectName}}", // queue name
-		true,        // durable
-		false,       // auto delete
-		false,       // exclusive
-		false,       // no wait
-		nil,         // arguments
-	)
-
-	if err != nil {
-		connection.Close() // Close the connection if queue declaration fails
-		channel.Close()    // Close the channel
-		fmt.Printf("creating queue to %v failed due to : %v\n",con_str, err)
-	}
-	return connection, channel, nil
-
-}
 
 func QeueConnect(queue_name string) (*amqp.Connection, *amqp.Channel, error) {
 
+	// Getting Rabbit URI from the ENV file
 	con_str := configs.AppConfig.Get("RABBIT_URI")
 
 	// RabbitMQ TLS configuration
@@ -212,7 +194,7 @@ func QeueConnect(queue_name string) (*amqp.Connection, *amqp.Channel, error) {
 `
 
 var pusbsttuctTemplate = `
-package rabbit
+package messages
 
 import (
 	"encoding/json"
@@ -223,10 +205,10 @@ import (
 
 type SampleMessage struct {}
 
-func PublishMessageQueue(posted_message SampleMessage, queue_name string) error {
+func PublishMessageQueue(posted_message RequestObject, queue_name string) error {
 
 	//   connection and channels from rabbitmq
-	connection, channel, _ := BrokerConnect()
+	connection, channel, _ := QeueConnect(queue_name)
 	defer connection.Close()
 	defer channel.Close()
 
@@ -235,7 +217,7 @@ func PublishMessageQueue(posted_message SampleMessage, queue_name string) error 
 	message := amqp.Publishing{
 		ContentType: "application/json",
 		Body:        []byte(queue_message),
-		Type:        "BULK_MAIL",
+		Type:        "REQUEST",
 	}
 
 	//send to rabbit app module qeue using channel
@@ -256,7 +238,7 @@ func PublishMessageQueue(posted_message SampleMessage, queue_name string) error 
 `
 
 var constumerBasicTemplate = `
-package rabbit
+package messages
 
 import (
 	"context"
@@ -283,16 +265,11 @@ import (
 
 type sample_message struct{}
 
-type RequestObject struct {
-	Host     string
-	Endpoint string
-	Method   string
-	Body     string
-	Tp       map[string][]string
-}
-
 func RabbitConsumer(queue_name string) {
+
+	// Loading configuration file
 	configs.AppConfig.SetEnv("dev")
+
 	//  tracer
 	tp := observe.InitTracer()
 	defer func() {
@@ -300,6 +277,7 @@ func RabbitConsumer(queue_name string) {
 			log.Printf("Error shutting down tracer provider: %v", err)
 		}
 	}()
+
 	// Getting app connection and channel
 	connection, channel, err := QeueConnect(queue_name)
 	if err != nil {
@@ -442,5 +420,20 @@ func startconsumer() {
 func init() {
 	goFrame.AddCommand(startconsumercli)
 
+}
+`
+
+var commonStructsTemplate = `
+package messages
+
+//  request object def for the consumer
+// only messages with this struct will be proccessed correctly
+// when sent to specfic queue, ( morel like interface for communtication between publisher and consumer )
+type RequestObject struct {
+	Host     string
+	Endpoint string
+	Method   string
+	Body     string
+	Tp       map[string][]string
 }
 `

@@ -66,6 +66,7 @@ func standardcmd() {
 func standrabbit() {
 	temps.LoadData()
 	temps.Frame()
+	temps.CommonRabbitFrame()
 	temps.RabbitFrame()
 	temps.PublishFrame()
 	temps.ConsumeFrame()
@@ -75,9 +76,9 @@ func standrabbit() {
 func standpublish() {
 	temps.LoadData()
 	temps.Frame()
+	temps.CommonRabbitFrame()
 	temps.RabbitFrame()
 	temps.PublishFrame()
-
 }
 
 func init() {
