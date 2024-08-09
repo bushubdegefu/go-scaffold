@@ -19,14 +19,14 @@ func CurdFrameFiber() {
 
 	// Create the models directory if it does not exist
 	// #################################################
-	err = os.MkdirAll("models/controllers", os.ModePerm)
+	err = os.MkdirAll("controllers", os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
 
 	for _, model := range RenderData.Models {
 
-		folder_path := fmt.Sprintf("models/controllers/%v_controller.go", model.Name)
+		folder_path := fmt.Sprintf("controllers/%v_controller.go", model.Name)
 		folder_path = strings.ToLower(folder_path)
 		curd_file, err := os.Create(folder_path)
 		if err != nil {
@@ -62,7 +62,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"{{.ProjectName}}.com/common"
-	"{{.ProjectName}}.com/database"
 	"{{.ProjectName}}.com/models"
 	"{{.ProjectName}}.com/observe"
 )
@@ -527,7 +526,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Produce json
 // @Param {{.LowerFieldName}}_id path int true "{{.FieldName}} ID"
 // @Param {{.LowerParentName}}_id path int true "{{.ParentName}} ID"
-// @Success 200 {object} common.ResponseHTTP{data={{.ParentName}}Post}
+// @Success 200 {object} common.ResponseHTTP{data=models.{{.ParentName}}Post}
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [delete]

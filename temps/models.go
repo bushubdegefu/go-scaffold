@@ -164,10 +164,6 @@ package models
 
 import (
 	"database/sql"
-	"fmt"
-	"log"
-	"time"
-
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
@@ -177,8 +173,7 @@ import (
 // {{.Name}} Database model info
 // @Description App type information
 type {{.Name}} struct {
-	{{range .Fields}}
-	{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}
+	{{range .Fields}} {{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}
 	{{end}}
 }
 
@@ -186,43 +181,28 @@ type {{.Name}} struct {
 // {{.Name}}Post model info
 // @Description {{.Name}}Post type information
 type {{.Name}}Post struct {
-	{{range .Fields}}
-	{{if .Post}}
-	{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}
-
-	{{end}}
+	{{range .Fields}} {{if .Post}} {{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}{{end}}
 	{{end}}
 }
 
 // {{.Name}}Get model info
 // @Description {{.Name}}Get type information
 type {{.Name}}Get struct {
-	{{range .Fields}}
-	{{if .Get}}
-	{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}
-	{{end}}
-	{{end}}
+{{range .Fields}} {{if .Get}}	{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}} {{end}}
+ {{end}}
 }
 
 // {{.Name}}Put model info
 // @Description {{.Name}}Put type information
 type {{.Name}}Put struct {
-	{{range .Fields}}
-	{{if .Put}}
-	{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}
-
-	{{ end }}
+	{{range .Fields}} {{if .Put}} {{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}} {{ end }}
 	{{end}}
 }
 
 // {{.Name}}Patch model info
 // @Description {{.Name}}Patch type information
 type {{.Name}}Patch struct {
-	{{range .Fields}}
-	{{if .Patch}}
-	{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}
-
-	{{end}}
+	{{range .Fields}}{{if .Patch}}{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}{{end}}
 	{{end}}
 }
 
@@ -245,11 +225,9 @@ func InitDatabase() {
 	fmt.Println("Connection Opened to Database")
 	if err == nil {
 		if err := database.AutoMigrate(
-
 			{{range .Models}}
 			&{{.Name}}{},
 			{{end}}
-
 		); err != nil {
 			log.Fatalln(err)
 		}
@@ -267,7 +245,6 @@ func CleanDatabase() {
 		fmt.Println("Dropping Models if Exist")
 		database.Migrator().DropTable(
 		{{range .Models}}
-		// Drop the join table
 			&{{.Name}}{},
 		{{end}}
 		)
@@ -288,6 +265,7 @@ import (
 	"log"
 	"os"
 	"time"
+	"fmt"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"

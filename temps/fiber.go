@@ -93,7 +93,7 @@ import (
 	"github.com/gofiber/swagger"
 	"{{.ProjectName}}.com/configs"
 	"{{.ProjectName}}.com/observe"
-	"{{.ProjectName}}.com/models/controllers"
+	"{{.ProjectName}}.com/controllers"
 	_ "{{.ProjectName}}.com/docs"
 	"{{.ProjectName}}.com/database"
 	"github.com/spf13/cobra"
@@ -309,7 +309,7 @@ import (
 	"{{.ProjectName}}.com/observe"
 	"{{.ProjectName}}.com/database"
 	_ "{{.ProjectName}}.com/docs"
-	"{{.ProjectName}}.com/models/controllers"
+	"{{.ProjectName}}.com/controllers"
 	"github.com/spf13/cobra"
 )
 

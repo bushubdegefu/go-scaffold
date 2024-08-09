@@ -76,7 +76,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"{{.ProjectName}}.com/models"
-	"{{.ProjectName}}.com/models/controllers"
+	"{{.ProjectName}}.com/controllers"
 )
 
 // go test -coverprofile=coverage.out ./...
@@ -144,7 +144,7 @@ func TestPost{{.Name}}sByID(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			// req.Header.Set("X-APP-TOKEN", "hi")
 
-	
+
 
 			resp, _ := TestApp.Test(req)
 
@@ -200,7 +200,7 @@ func TestPost{{.Name}}sByID(t *testing.T) {
 					req_delete.Header.Set("Content-Type", "application/json")
 					resp, _ := TestApp.Test(req_delete)
 
-					
+
 					assert.Equalf(t, 500, resp.StatusCode, test.description+"deleteing")
 				})
 			}
@@ -264,7 +264,7 @@ func TestPatch{{.Name}}sByID(t *testing.T) {
 
 			//  changing post data to json
 			patch_data, _ := json.Marshal(test.patch_data)
-			
+
 			req := httptest.NewRequest(http.MethodPatch,test.route, bytes.NewReader(patch_data))
 
 			// Add specfic headers if needed as below
@@ -272,7 +272,7 @@ func TestPatch{{.Name}}sByID(t *testing.T) {
 			// req.Header.Set("X-APP-TOKEN", "hi")
 
 			//  this is the response recorder
-	
+
 			resp, _ := TestApp.Test(req)
 
 			// for debuging you can uncomment
@@ -324,8 +324,8 @@ var tests{{.Name}}sGet = []struct {
 
 func TestGet{{.Name}}s(t *testing.T) {
 	ReturnTestApp()
-	
-	
+
+
 	// Iterate through test single test cases
 	for _, test := range tests{{.Name}}sGet {
 		t.Run(test.name, func(t *testing.T) {
@@ -335,7 +335,7 @@ func TestGet{{.Name}}s(t *testing.T) {
 			// req.Header.Set("X-APP-TOKEN", "hi")
 
 			//  this is the response recorder
-			
+
 
 			resp, _ := TestApp.Test(req)
 
@@ -387,14 +387,14 @@ func TestGet{{.Name}}sByID(t *testing.T) {
 	// Iterate through test single test cases
 	for _, test := range tests{{.Name}}sGetByID {
 		t.Run(test.name, func(t *testing.T) {
-			
+
 			req := httptest.NewRequest(http.MethodGet, test.route, nil)
-		
+
 			// Add specfic headers if needed as below
 			// req.Header.Set("X-APP-TOKEN", "hi")
 
 			resp, _ := TestApp.Test(req)
-			
+
 
 			//  Finally asserting test cases
 			assert.Equalf(t, test.expectedCode, resp.StatusCode, test.description)
@@ -411,7 +411,7 @@ package tests
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
-	"{{.ProjectName}}.com/models/controllers"
+	"{{.ProjectName}}.com/controllers"
 )
 
 var (
@@ -429,13 +429,13 @@ func ReturnTestApp() {
 
 	// loading env file
 	godotenv.Load(".test.env")
-	
+
 	TestApp = fiber.New()
 
 	group_path = "/api/v1"
-	
+
 	app := TestApp.Group(group_path)
-	
+
 	{{range .Models}}
 		app.Get("/{{.LowerName}}",nextFunc).Name("get_all_{{.LowerName}}s").Get("/{{.LowerName}}", controllers.Get{{.Name}}s)
 		app.Get("/{{.LowerName}}/:{{.LowerName}}_id",nextFunc).Name("get_one_{{.LowerName}}s").Get("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Get{{.Name}}ByID)
@@ -449,7 +449,7 @@ func ReturnTestApp() {
 		{{end}}
 	{{end}}
 
-	
+
 
 }
 
