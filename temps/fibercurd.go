@@ -82,10 +82,10 @@ import (
 // @Router /{{.LowerName}} [get]
 func Get{{.Name}}s(contx *fiber.Ctx) error {
 
-	//  Getting tracer context 
+	//  Getting tracer context
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	
+
 
 	//  Getting Database connection
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -130,10 +130,10 @@ func Get{{.Name}}s(contx *fiber.Ctx) error {
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [get]
 func Get{{.Name}}ByID(contx *fiber.Ctx) error {
 
-	// Starting tracer context and tracer	
+	// Starting tracer context and tracer
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	
+
 
 	//  Getting Database connection
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -189,13 +189,13 @@ func Get{{.Name}}ByID(contx *fiber.Ctx) error {
 // @Success 200 {object} common.ResponseHTTP{data=models.{{.Name}}Post}
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Failure 500 {object} common.ResponseHTTP{}
-// @Router /{{.LowerName}}s [post]
+// @Router /{{.LowerName}} [post]
 func Post{{.Name}}(contx *fiber.Ctx) error {
 
-	// Starting tracer context and tracer	
+	// Starting tracer context and tracer
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-		
+
 
 	// Getting Database Connection
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -269,10 +269,10 @@ func Post{{.Name}}(contx *fiber.Ctx) error {
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [patch]
 func Patch{{.Name}}(contx *fiber.Ctx) error {
 
-	// Starting tracer context and tracer	
+	// Starting tracer context and tracer
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	
+
 
 	// Get database connection
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -366,12 +366,12 @@ func Patch{{.Name}}(contx *fiber.Ctx) error {
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [delete]
 func Delete{{.Name}}(contx *fiber.Ctx) error {
 
-	// Starting tracer context and tracer	
+	// Starting tracer context and tracer
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	
 
-	// Getting Database connection 
+
+	// Getting Database connection
 	db, _ := contx.Locals("db").(*gorm.DB)
 
 	// get deleted {{.LowerName}} attributes to return
@@ -452,7 +452,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 	// Starting tracer context and tracer
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-		
+
 
 	// database connection
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -533,14 +533,14 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [delete]
 func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 
-	// Starting tracer context and tracer	
+	// Starting tracer context and tracer
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-	
 
-	//Connect to Database   
+
+	//Connect to Database
 	db, _ := contx.Locals("db").(*gorm.DB)
-	
+
 	// validate path params
 	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Params("{{.LowerFieldName}}_id"))
 	if err != nil || {{.LowerFieldName}}_id == 0 {
@@ -622,11 +622,11 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [patch]
 func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
-	
-	// Starting tracer context and tracer	
+
+	// Starting tracer context and tracer
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-		
+
 
 	// connect
 	db, _ := contx.Locals("db").(*gorm.DB)
@@ -697,10 +697,10 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [delete]
 func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 
-	// Starting tracer context and tracer	
+	// Starting tracer context and tracer
 	ctx := contx.Locals("tracer")
 	tracer, _ := ctx.(*observe.RouteTracer)
-		
+
 
 	//  database connection
 	db, _ := contx.Locals("db").(*gorm.DB)

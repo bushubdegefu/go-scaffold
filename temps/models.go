@@ -189,7 +189,7 @@ type {{.Name}}Post struct {
 	{{range .Fields}}
 	{{if .Post}}
 	{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}
-	
+
 	{{end}}
 	{{end}}
 }
@@ -210,7 +210,7 @@ type {{.Name}}Put struct {
 	{{range .Fields}}
 	{{if .Put}}
 	{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}
-	
+
 	{{ end }}
 	{{end}}
 }
@@ -240,36 +240,42 @@ import (
 )
 
 func InitDatabase() {
-	configs.NewEnvFile("./configs")	
-	database := database.ReturnSession()
+	configs.NewEnvFile("./configs")
+	database, err  := database.ReturnSession()
 	fmt.Println("Connection Opened to Database")
-	
-	if err := database.AutoMigrate(
-		
-		{{range .Models}}
-		&{{.Name}}{},
-		{{end}}
+	if err == nil {
+		if err := database.AutoMigrate(
 
-	); err != nil {
-		log.Fatalln(err)
+			{{range .Models}}
+			&{{.Name}}{},
+			{{end}}
+
+		); err != nil {
+			log.Fatalln(err)
+		}
+		fmt.Println("Database Migrated")
+	} else {
+		panic(err)
 	}
-	fmt.Println("Database Migrated")
 }
 
 func CleanDatabase() {
-	configs.NewEnvFile("./configs")	
-	database := database.ReturnSession()
-	fmt.Println("Connection Opened to Database")
-	
-	fmt.Println("Dropping Models if Exist")
-	{{range .Models}}
-	// Drop the join table
-	database.Migrator().DropTable(
-		&{{.Name}}{},
-	)
-	{{end}}
-	
-	fmt.Println("Database Cleaned")
+	configs.NewEnvFile("./configs")
+	database, err := database.ReturnSession()
+	if err == nil {
+		fmt.Println("Connection Opened to Database")
+		fmt.Println("Dropping Models if Exist")
+		database.Migrator().DropTable(
+		{{range .Models}}
+		// Drop the join table
+			&{{.Name}}{},
+		{{end}}
+		)
+
+		fmt.Println("Database Cleaned")
+	} else {
+		panic(err)
+	}
 }
 
 
@@ -283,6 +289,7 @@ import (
 	"os"
 	"time"
 
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -304,7 +311,7 @@ func GormLoggerFile() *os.File {
 	return gormLogFile
 }
 
-func ReturnSession() *gorm.DB {
+func ReturnSession() (*gorm.DB,error) {
 
 	//  setting up database connection based on DB type
 
@@ -315,7 +322,7 @@ func ReturnSession() *gorm.DB {
 	gormFileLogger.SetOutput(gormlogger)
 	gormFileLogger.Writer()
 
-	
+
 	gormLogger := log.New(gormFileLogger.Writer(), "\r\n", log.LstdFlags|log.Ldate|log.Ltime|log.Lshortfile)
 	newLogger := logger.New(
 		gormLogger, // io writer
@@ -338,37 +345,90 @@ func ReturnSession() *gorm.DB {
 			PreferSimpleProtocol: true, // disables implicit prepared statement usage,
 
 		}), &gorm.Config{
+			DisableForeignKeyConstraintWhenMigrating: true,
 			Logger:                 newLogger,
 			SkipDefaultTransaction: true,
 		})
 		if err != nil {
 			panic(err)
 		}
-		
-		sqlDB, _ := db.DB()
+
+		sqlDB,err := db.DB()
+		if err != nil {
+			fmt.Printf("Error during connecting to database: %v\n", err)
+			return nil, err
+		}
 		sqlDB.SetMaxOpenConns(10)
 		sqlDB.SetConnMaxLifetime(5 * time.Second)
 
 		DBSession = db
-	case "":
+	case "sqlite":
 		//  this is sqlite connection
-		db, _ := gorm.Open(sqlite.Open("goframe.db"), &gorm.Config{
+		db, _ := gorm.Open(sqlite.Open(configs.AppConfig.Get("SQLLITE_URI")), &gorm.Config{
+			DisableForeignKeyConstraintWhenMigrating: true,
 			Logger:                 newLogger,
 			SkipDefaultTransaction: true,
 		})
-		
-		sqlDB, _ := db.DB()
+
+		sqlDB,err := db.DB()
+		if err != nil {
+			fmt.Printf("Error during connecting to database: %v\n", err)
+			return nil, err
+		}
+		sqlDB.SetMaxOpenConns(10)
+		sqlDB.SetConnMaxLifetime(5 * time.Second)
+		DBSession = db
+	case "mysql":
+		db, _ := gorm.Open(mysql.New(mysql.Config{
+			DSN:                       configs.AppConfig.Get("MYSQL_URI"), // data source name
+			DefaultStringSize:         256,                                // default size for string fields
+			DisableDatetimePrecision:  true,                               // disable datetime precision, which not supported before MySQL 5.6
+			DontSupportRenameIndex:    true,                               // drop & create when rename index, rename index not supported before MySQL 5.7, MariaDB
+			DontSupportRenameColumn:   true,                               //  when rename column, rename column not supported before MySQL 8, MariaDB
+			SkipInitializeWithVersion: false,                              // auto configure based on currently MySQL version
+		}), &gorm.Config{
+			DisableForeignKeyConstraintWhenMigrating: true,
+			Logger:                 newLogger,
+			SkipDefaultTransaction: true,
+		})
+
+		sqlDB,err := db.DB()
+		if err != nil {
+			fmt.Printf("Error during connecting to database: %v\n", err)
+			return nil, err
+		}
+		sqlDB.SetMaxOpenConns(10)
+		sqlDB.SetConnMaxLifetime(5 * time.Second)
+		DBSession = db
+	case "":
+		//  this is sqlite connection
+		db, _ := gorm.Open(sqlite.Open("goframe-2.db"), &gorm.Config{
+			DisableForeignKeyConstraintWhenMigrating: true,
+			Logger:                 newLogger,
+			SkipDefaultTransaction: true,
+		})
+
+		sqlDB, err:= db.DB()
+		if err != nil {
+			fmt.Printf("Error during connecting to database: %v\n", err)
+			return nil, err
+		}
 		sqlDB.SetMaxOpenConns(10)
 		sqlDB.SetConnMaxLifetime(5 * time.Second)
 		DBSession = db
 	default:
 		//  this is sqlite connection
 		db, _ := gorm.Open(sqlite.Open(configs.AppConfig.Get("SQLITE_URI")), &gorm.Config{
+			DisableForeignKeyConstraintWhenMigrating: true,
 			Logger:                 newLogger,
 			SkipDefaultTransaction: true,
 		})
 
-		sqlDB, _ := db.DB()
+		sqlDB, err:= db.DB()
+		if err != nil {
+			fmt.Printf("Error during connecting to database: %v\n", err)
+			return nil, err
+		}
 		sqlDB.SetMaxOpenConns(10)
 		sqlDB.SetConnMaxLifetime(5 * time.Second)
 		DBSession = db
@@ -376,7 +436,7 @@ func ReturnSession() *gorm.DB {
 	}
 
 	DBSession.Use(tracing.NewPlugin())
-	return DBSession
+	return DBSession,nil
 
 }
 

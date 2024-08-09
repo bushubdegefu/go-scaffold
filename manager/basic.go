@@ -41,6 +41,15 @@ var (
 			standpublish()
 		},
 	}
+
+	standardbcli = &cobra.Command{
+		Use:   "db",
+		Short: "generate basic folder struct for the database connection file( mainly sqlite and postgres)",
+		Long:  `generate basic folder struct for the database connection file( mainly sqlite and postgres)`,
+		Run: func(cmd *cobra.Command, args []string) {
+			standdatabase()
+		},
+	}
 )
 
 func basiccmd() {
@@ -81,9 +90,16 @@ func standpublish() {
 	temps.PublishFrame()
 }
 
+func standdatabase() {
+	temps.LoadData()
+	temps.Frame()
+	temps.DbConnDataFrame()
+}
+
 func init() {
 	goFrame.AddCommand(basicstruct)
 	goFrame.AddCommand(standardstruct)
 	goFrame.AddCommand(standardrabbit)
 	goFrame.AddCommand(standarpubcli)
+	goFrame.AddCommand(standardbcli)
 }

@@ -333,11 +333,13 @@ DB_TYPE=postgres
 POSTGRES_URI="host=localhost user=blueuser password=default dbname=learning_one port=5432 sslmode=disable"
 #DB_TYPE="sqlite"
 #SQLLITE_URI="goframe.db"
+#DB_TYPE="mysql"
+#MYSQL_URI="yenefivy_beimnet:bluenet%402025@tcp(109.70.148.37:3306)/gorm?charset=utf8&parseTime=True&loc=Local"
 
 #Messeage qeue settings specifically rabbit
 RABBIT_URI="amqps://xrqlluoo:4hAUYGqztMsWyFdT5r65j4xudTw-AWl1@puffin.rmq2.cloudamqp.com/xrqlluoo"
 
-# JWT token settings 
+# JWT token settings
 JWT_SALT_LIFE_TIME=60 #in minutes
 JWT_SALT_LENGTH=25
 

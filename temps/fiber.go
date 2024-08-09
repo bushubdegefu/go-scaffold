@@ -76,7 +76,7 @@ import (
 	"strconv"
 	"time"
 
-	
+
 	"os"
 	"os/signal"
 
@@ -124,7 +124,7 @@ func otelspanstarter(ctx *fiber.Ctx) error {
 }
 
 func dbsessioninjection(ctx *fiber.Ctx) error {
-	db := database.ReturnSession()
+	db, _ := database.ReturnSession()
 	ctx.Locals("db", db)
 	return ctx.Next()
 }
@@ -214,29 +214,29 @@ func fiber_run() {
 
 		// allow cross origin request
 		app.Use(cors.New())
-		
+
 		app.Get("/", func(c *fiber.Ctx) error {
 			return c.SendString("Hello, World!")
 		})
 		// swagger docs
 		app.Get("/docs/*", swagger.HandlerDefault)
 		app.Get("/docs/*", swagger.New()).Name("swagger_routes")
-		
+
 		// fiber native monitoring metrics endpoint
 		app.Get("/lmetrics", monitor.New(monitor.Config{Title: "goBlue Metrics Page"})).Name("custom_metrics_route")
-		
+
 		// recover middlware
-		
+
 		// adding group with authenthication middleware
 		admin_app := app.Group("/api/v1")
 		setupRoutes(admin_app.(*fiber.Group))
-		
+
 		HTTP_PORT := configs.AppConfig.Get("HTTP_PORT")
 		// starting on provided port
 		go func(app *fiber.App) {
 			app.Listen("0.0.0.0:" + HTTP_PORT)
 			}(app)
-			
+
 			c := make(chan os.Signal, 1)   // Create channel to signify a signal being sent
 	signal.Notify(c, os.Interrupt) // When an interrupt or termination signal is sent, notify the channel
 
@@ -257,7 +257,7 @@ func init() {
 
 
 func setupRoutes(gapp *fiber.Group) {
-	
+
 	{{range .Models}}
 	gapp.Get("/{{.LowerName}}",NextFunc).Name("get_all_{{.LowerName}}s").Get("/{{.LowerName}}", controllers.Get{{.Name}}s)
 	gapp.Get("/{{.LowerName}}/:{{.LowerName}}_id",NextFunc).Name("get_one_{{.LowerName}}s").Get("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Get{{.Name}}ByID)
@@ -288,9 +288,9 @@ import (
 	"strings"
 	"strconv"
 	"time"
-	
 
-	
+
+
 	"os"
 	"os/signal"
 
@@ -342,7 +342,7 @@ func NextProdFunc(contx *fiber.Ctx) error {
 }
 
 func dbsessioninjectionprod(ctx *fiber.Ctx) error {
-	db := database.ReturnSession()
+	db, _ := database.ReturnSession()
 	ctx.Locals("db", db)
 	return ctx.Next()
 }
@@ -388,7 +388,7 @@ func prod_run() {
 			},
 		})
 
-		
+
 		//  rate limiting middleware
 		app.Use(limiter.New(limiter.Config{
 			Max:               rate_limit_per_second,
@@ -407,7 +407,7 @@ func prod_run() {
 			Lifetime: 10 * time.Second,
 				}))
 
-	
+
 		// logger middle ware with the custom file writer object
 		app.Use(logger.New(logger.Config{
 			Format:     "\n${cyan}-[${time}]-[${ip}] -${white}${pid} ${red}${status} ${blue}[${method}] ${white}-${path}\n [${body}]\n[${error}]\n[${resBody}]\n[${reqHeaders}]\n[${queryParams}]\n",
@@ -428,29 +428,29 @@ func prod_run() {
 
 		// allow cross origin request
 		app.Use(cors.New())
-		
+
 		app.Get("/", func(c *fiber.Ctx) error {
 			return c.SendString("Hello, World!")
 		})
 		// swagger docs
 		app.Get("/docs/*", swagger.HandlerDefault)
 		app.Get("/docs/*", swagger.New()).Name("swagger_routes")
-		
+
 		// fiber native monitoring metrics endpoint
 		app.Get("/lmetrics", monitor.New(monitor.Config{Title: "goBlue Metrics Page"})).Name("custom_metrics_route")
-		
+
 		// recover middlware
-		
+
 		// adding group with authenthication middleware
 		admin_app := app.Group("/api/v1")
 		setupProdRoutes(admin_app.(*fiber.Group))
-		
+
 		HTTP_PORT := configs.AppConfig.Get("HTTP_PORT")
 		// starting on provided port
 		go func(app *fiber.App) {
 			app.Listen("0.0.0.0:" + HTTP_PORT)
 			}(app)
-			
+
 			c := make(chan os.Signal, 1)   // Create channel to signify a signal being sent
 	signal.Notify(c, os.Interrupt) // When an interrupt or termination signal is sent, notify the channel
 
@@ -470,7 +470,7 @@ func init() {
 }
 
 func setupProdRoutes(gapp *fiber.Group) {
-	
+
 	{{range .Models}}
 	gapp.Get("/{{.LowerName}}",NextProdFunc).Name("get_all_{{.LowerName}}s").Get("/{{.LowerName}}", controllers.Get{{.Name}}s)
 	gapp.Get("/{{.LowerName}}/:{{.LowerName}}_id",NextProdFunc).Name("get_one_{{.LowerName}}s").Get("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Get{{.Name}}ByID)
