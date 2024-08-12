@@ -19,6 +19,7 @@ var (
 func echogen() {
 	temps.LoadData()
 	temps.EchoFrame()
+	temps.CommonCMD()
 }
 
 func init() {

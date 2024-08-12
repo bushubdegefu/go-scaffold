@@ -32,11 +32,18 @@ func CommonFrame() {
 		panic(err)
 	}
 
+}
+
+func CommonCMD() {
 	// running go mod tidy finally
 	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
 		fmt.Printf("error: %v \n", err)
 	}
 
+	// running go mod tidy finally
+	if err := exec.Command("go", "get", "-u", ".").Run(); err != nil {
+		fmt.Printf("error: %v \n", err)
+	}
 }
 
 var commonTemplate = `

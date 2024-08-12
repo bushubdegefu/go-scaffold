@@ -3,7 +3,6 @@ package temps
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 	"text/template"
 )
@@ -56,10 +55,6 @@ func TestFrameFiber() {
 	defer test_app_file.Close()
 
 	// ###################################################################
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("error: %v \n", err)
-	}
 }
 
 var testTemplateFiber = `

@@ -3,7 +3,6 @@ package temps
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 	"text/template"
 )
@@ -43,10 +42,6 @@ func TestFrameEcho() {
 
 	// ###################################################################
 
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("error: %v \n", err)
-	}
 }
 
 var testTemplateEcho = `

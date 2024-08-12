@@ -3,7 +3,6 @@ package temps
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 	"text/template"
 )
@@ -42,10 +41,6 @@ func CurdFrameFiber() {
 
 	}
 
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("error #curdframer: %v \n", err)
-	}
 }
 
 var curdTemplateFiber = `

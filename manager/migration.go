@@ -19,6 +19,7 @@ var (
 func migrationmod() {
 	temps.LoadData()
 	temps.MigrationFrame()
+	temps.CommonCMD()
 }
 
 func init() {

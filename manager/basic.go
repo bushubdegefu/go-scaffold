@@ -61,6 +61,7 @@ func basiccmd() {
 	temps.PublishFrame()
 	temps.FiberTracerFrame()
 	temps.GitDockerFrame()
+	temps.CommonCMD()
 }
 
 func standardcmd() {
@@ -70,6 +71,7 @@ func standardcmd() {
 	temps.StandardTracerFrame()
 	temps.CommonFrame()
 	temps.RabbitFrame()
+	temps.CommonCMD()
 }
 
 func standrabbit() {
@@ -80,6 +82,7 @@ func standrabbit() {
 	temps.PublishFrame()
 	temps.ConsumeFrame()
 	temps.RunConsumeFrame()
+	temps.CommonCMD()
 
 }
 func standpublish() {
@@ -88,12 +91,14 @@ func standpublish() {
 	temps.CommonRabbitFrame()
 	temps.RabbitFrame()
 	temps.PublishFrame()
+	temps.CommonCMD()
 }
 
 func standdatabase() {
 	temps.LoadData()
 	temps.Frame()
 	temps.DbConnDataFrame()
+	temps.CommonCMD()
 }
 
 func init() {

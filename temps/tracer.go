@@ -3,7 +3,6 @@ package temps
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"text/template"
 )
 
@@ -41,11 +40,6 @@ func FiberTracerFrame() {
 		panic(err)
 	}
 
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("error: %v \n", err)
-	}
-
 }
 
 func StandardTracerFrame() {
@@ -80,11 +74,6 @@ func StandardTracerFrame() {
 	err = common_tmpl.Execute(common_file, RenderData)
 	if err != nil {
 		panic(err)
-	}
-
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("error: %v \n", err)
 	}
 
 }
@@ -156,7 +145,7 @@ func InitTracer() *sdktrace.TracerProvider {
 func FiberAppSpanner(ctx *fiber.Ctx, span_name string ) (context.Context, oteltrace.Span) {
 	gen, _ := uuid.NewV7()
 	id := gen.String()
-	
+
 	trace, span := AppTracer.Start(ctx.UserContext(), span_name,
 		oteltrace.WithAttributes(attribute.String("id", id)),
 		oteltrace.WithAttributes(attribute.String("request", ctx.Request().String())),
@@ -240,11 +229,11 @@ func AppSpanner(ctx context.Context, span_name string) (context.Context, oteltra
 	gen, _ := uuid.NewV7()
 	id := gen.String()
 
-	trace, span := AppTracer.Start(ctx, span_name,	
+	trace, span := AppTracer.Start(ctx, span_name,
 		oteltrace.WithAttributes(attribute.String("id", id)),
 		oteltrace.WithAttributes(attribute.String("request", ctx.Request().String())),
 	)
-		
+
 	return trace, span
 }
 

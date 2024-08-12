@@ -30,6 +30,7 @@ func genecho() {
 	temps.DbConnDataFrame()
 	temps.CurdFrameEcho()
 	temps.TestFrameEcho()
+	temps.CommonCMD()
 }
 
 func genfiber() {
@@ -37,7 +38,7 @@ func genfiber() {
 	temps.ModelDataFrame()
 	temps.CurdFrameFiber()
 	temps.TestFrameFiber()
-
+	temps.CommonCMD()
 }
 
 func init() {

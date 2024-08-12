@@ -3,7 +3,6 @@ package temps
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"text/template"
 )
 
@@ -164,11 +163,6 @@ func Frame() {
 	err = testenv_tmpl.Execute(testenv_file, RenderData)
 	if err != nil {
 		fmt.Printf("Frame - 27: %v\n", err)
-	}
-
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("Frame error- what here: %v \n", err)
 	}
 
 }

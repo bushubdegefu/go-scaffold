@@ -1,9 +1,7 @@
 package temps
 
 import (
-	"fmt"
 	"os"
-	"os/exec"
 	"text/template"
 )
 
@@ -50,11 +48,6 @@ func EchoFrame() {
 		panic(err)
 	}
 
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("error: %v \n", err)
-	}
-
 }
 
 var devechoTemplate = `
@@ -96,7 +89,7 @@ func echo_run() {
 
 	// starting the app
 	app := echo.New()
-	
+
 	//  prometheus metrics middleware
 	app.Use(echoprometheus.NewMiddleware("echo_blue"))
 
@@ -119,7 +112,7 @@ func echo_run() {
 		app.Logger.Fatal(app.Start("0.0.0.0:" + HTTP_PORT))
 		// log.Fatal(app.ListenTLS(":" + port_1, "server.pem", "server-key.pem"))
 	}(app)
-	
+
 
 	c := make(chan os.Signal, 1)   // Create channel to signify a signal being sent
 	signal.Notify(c, os.Interrupt) // When an interrupt or termination signal is sent, notify the channel
@@ -217,7 +210,7 @@ func prod_echo()) {
 		app.Logger.Fatal(app.Start("0.0.0.0:" + HTTP_PORT))
 		// log.Fatal(app.ListenTLS(":" + port_1, "server.pem", "server-key.pem"))
 	}(app)
-	
+
 
 	c := make(chan os.Signal, 1)   // Create channel to signify a signal being sent
 	signal.Notify(c, os.Interrupt) // When an interrupt or termination signal is sent, notify the channel

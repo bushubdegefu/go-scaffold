@@ -20,6 +20,7 @@ func fibergen() {
 	temps.LoadData()
 	temps.FiberFrame()
 	temps.FiberFrame()
+	temps.CommonCMD()
 }
 
 func init() {

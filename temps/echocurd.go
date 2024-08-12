@@ -3,7 +3,6 @@ package temps
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 	"text/template"
 )
@@ -41,10 +40,6 @@ func CurdFrameEcho() {
 
 	}
 
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("error: %v \n", err)
-	}
 }
 
 var curdTemplate = `
@@ -442,7 +437,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 	// Starting tracer context and tracer
 	ctx := context.Background()
 	tracer, span := observe.AppSpanner(ctx, "Add{{.FieldName}}{{.ParentName}}s-root")
-	defer span.End()	
+	defer span.End()
 
 	//  database connection
 	db := database.ReturnSession()
@@ -527,9 +522,9 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 	tracer, span := observe.AppSpanner(ctx, "Delete{{.FieldName}}{{.ParentName}}s-root")
 	defer span.End()
 
-	//Connect to Database   
+	//Connect to Database
 	db := database.ReturnSession()
-	
+
 	// validate path params
 	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Param("{{.LowerFieldName}}_id"))
 	if err != nil || {{.LowerFieldName}}_id == 0 {
@@ -614,7 +609,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 	// Starting tracer context and tracer
 	ctx := context.Background()
 	tracer, span := observe.AppSpanner(ctx, "Add{{.FieldName}}{{.ParentName}}s-root")
-	defer span.End()	
+	defer span.End()
 
 	//  database connection
 	db := database.ReturnSession()

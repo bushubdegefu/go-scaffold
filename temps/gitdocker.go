@@ -1,9 +1,7 @@
 package temps
 
 import (
-	"fmt"
 	"os"
-	"os/exec"
 	"text/template"
 )
 
@@ -60,11 +58,6 @@ func GitDockerFrame() {
 		panic(err)
 	}
 
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("error: %v \n", err)
-	}
-
 }
 
 var dockerIgnore = `
@@ -89,7 +82,7 @@ COPY main /playground/
 
 COPY server.pem  /playground/
 
-COPY server-key.pem  /playground/ 
+COPY server-key.pem  /playground/
 
 COPY configs /playground/
 

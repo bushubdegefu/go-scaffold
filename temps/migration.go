@@ -1,9 +1,7 @@
 package temps
 
 import (
-	"fmt"
 	"os"
-	"os/exec"
 	"text/template"
 )
 
@@ -30,11 +28,6 @@ func MigrationFrame() {
 	err = migration_tmpl.Execute(migration_file, RenderData)
 	if err != nil {
 		panic(err)
-	}
-
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("error: %v \n", err)
 	}
 
 }

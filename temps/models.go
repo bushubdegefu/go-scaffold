@@ -153,10 +153,6 @@ func DbConnDataFrame() {
 		panic(err)
 	}
 
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("error: %v \n", err)
-	}
 }
 
 var gmodelTemplate = `
