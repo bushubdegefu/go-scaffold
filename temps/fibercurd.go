@@ -123,7 +123,7 @@ func Get{{.Name}}s(contx *fiber.Ctx) error {
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param id path int true "{{.Name}} ID"
+// @Param {{.LowerName}}_id path int true "{{.Name}} ID"
 // @Success 200 {object} common.ResponseHTTP{data=models.{{.Name}}Get}
 // @Failure 404 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [get]
@@ -261,7 +261,7 @@ func Post{{.Name}}(contx *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param {{.LowerName}} body models.{{.Name}}Post true "Patch {{.Name}}"
-// @Param id path int true "{{.Name}} ID"
+// @Param {{.LowerName}}_id path int true "{{.Name}} ID"
 // @Success 200 {object} common.ResponseHTTP{data=models.{{.Name}}Post}
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Failure 500 {object} common.ResponseHTTP{}
@@ -358,7 +358,7 @@ func Patch{{.Name}}(contx *fiber.Ctx) error {
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param id path int true "{{.Name}} ID"
+// @Param {{.LowerName}}_id path int true "{{.Name}} ID"
 // @Success 200 {object} common.ResponseHTTP{}
 // @Failure 404 {object} common.ResponseHTTP{}
 // @Failure 503 {object} common.ResponseHTTP{}
@@ -616,10 +616,10 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param {{.LowerFieldName}}_id path int true "{{.ParentName}} ID"
-// @Param {{.LowerParentName}}_id query int true "{{.FieldName}} ID"
+// @Param {{.LowerFieldName}}_id path int true "{{.FieldName}} ID"
+// @Param {{.LowerParentName}}_id query int true " {{.ParentName}} ID"
 // @Failure 400 {object} common.ResponseHTTP{}
-// @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [patch]
+// @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [patch]
 func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 
 	// Starting tracer context and tracer
@@ -693,7 +693,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 // @Param {{.LowerFieldName}}_id path int true "{{.ParentName}} ID"
 // @Param {{.LowerParentName}}_id query int true "{{.FieldName}} ID"
 // @Failure 400 {object} common.ResponseHTTP{}
-// @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [delete]
+// @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [delete]
 func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 
 	// Starting tracer context and tracer
