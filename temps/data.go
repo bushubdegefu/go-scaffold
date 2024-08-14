@@ -38,19 +38,20 @@ type Relationship struct {
 }
 
 type Field struct {
-	BackTick    string `json:"back_tick"`
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Annotation  string `json:"annotation"`
-	CurdFlag    string `json:"curd_flag"`
-	Get         bool   `json:"get"`
-	Post        bool   `json:"post"`
-	Patch       bool   `json:"patch"`
-	Put         bool   `json:"put"`
-	OtM         bool   `json:"otm"`
-	MtM         bool   `json:"mtm"`
-	ProjectName string `json:"project_name"`
-	AppName     string `json:"app_name"`
+	BackTick        string `json:"back_tick"`
+	Name            string `json:"name"`
+	Type            string `json:"type"`
+	Annotation      string `json:"annotation"`
+	MongoAnnotation string `json:"mongo_annotation"`
+	CurdFlag        string `json:"curd_flag"`
+	Get             bool   `json:"get"`
+	Post            bool   `json:"post"`
+	Patch           bool   `json:"patch"`
+	Put             bool   `json:"put"`
+	OtM             bool   `json:"otm"`
+	MtM             bool   `json:"mtm"`
+	ProjectName     string `json:"project_name"`
+	AppName         string `json:"app_name"`
 }
 
 var RenderData Data

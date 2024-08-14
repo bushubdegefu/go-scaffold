@@ -1,11 +1,8 @@
 package temps
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
-	"strconv"
 	"strings"
 	"text/template"
 )
@@ -20,44 +17,13 @@ func ModelDataFrame() {
 	}
 	defer file.Close() // Defer closing the file until the function returns
 
-	// Decode the JSON content into the data structure
-	var data Data
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&data)
-	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return
-	}
-	// setting default value for config data file
-	//  Get$Post$Patch$Put$OnetoMany$ManytoMany
-	// "Get$Post$Patch$Put$OtM$MtM"
-
-	for i := 0; i < len(data.Models); i++ {
-		data.Models[i].LowerName = strings.ToLower(data.Models[i].Name)
-		data.Models[i].AppName = data.AppName
-		data.Models[i].ProjectName = data.ProjectName
-
-		for j := 0; j < len(data.Models[i].Fields); j++ {
-			data.Models[i].Fields[j].BackTick = "`"
-			cf := strings.Split(data.Models[i].Fields[j].CurdFlag, "$")
-
-			data.Models[i].Fields[j].Get, _ = strconv.ParseBool(cf[0])
-			data.Models[i].Fields[j].Post, _ = strconv.ParseBool(cf[1])
-			data.Models[i].Fields[j].Patch, _ = strconv.ParseBool(cf[2])
-			data.Models[i].Fields[j].Put, _ = strconv.ParseBool(cf[3])
-			data.Models[i].Fields[j].AppName = data.AppName
-			data.Models[i].Fields[j].ProjectName = data.ProjectName
-
-		}
-	}
-
 	// ############################################################
-	models_tmpl, err := template.New("data").Parse(gmodelTemplate)
+	models_tmpl, err := template.New("RenderData").Parse(gmodelTemplate)
 	if err != nil {
 		panic(err)
 	}
 
-	migration_function_tmpl, err := template.New("data").Parse(migrationFuncTemplate)
+	migration_function_tmpl, err := template.New("RenderData").Parse(migrationFuncTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +35,7 @@ func ModelDataFrame() {
 		panic(err)
 	}
 
-	for _, model := range data.Models {
+	for _, model := range RenderData.Models {
 
 		folder_path := fmt.Sprintf("models/%v.go", model.Name)
 		folder_path = strings.ToLower(folder_path)
@@ -91,7 +57,7 @@ func ModelDataFrame() {
 		panic(err)
 	}
 
-	err = migration_function_tmpl.Execute(init_file, data)
+	err = migration_function_tmpl.Execute(init_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
@@ -99,7 +65,7 @@ func ModelDataFrame() {
 
 	//  creating database connection folder
 	// ############################################################
-	database_tmpl, err := template.New("data").Parse(databaseTemplate)
+	database_tmpl, err := template.New("RenderData").Parse(databaseTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -116,14 +82,9 @@ func ModelDataFrame() {
 	}
 	defer database_conn_file.Close()
 
-	err = database_tmpl.Execute(database_conn_file, data)
+	err = database_tmpl.Execute(database_conn_file, RenderData)
 	if err != nil {
 		panic(err)
-	}
-
-	// running go mod tidy finally
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		fmt.Printf("error: %v \n", err)
 	}
 }
 
@@ -155,6 +116,40 @@ func DbConnDataFrame() {
 
 }
 
+func NoSQLModelDataFrame() {
+
+	// ############################################################
+	models_tmpl, err := template.New("RenderData").Parse(nosqlTemplateModel)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create the models directory if it does not exist
+	// #################################################
+	err = os.MkdirAll("nosqlmodels", os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, model := range RenderData.Models {
+
+		folder_path := fmt.Sprintf("nosqlmodels/%v.go", model.Name)
+		folder_path = strings.ToLower(folder_path)
+		models_file, err := os.Create(folder_path)
+		if err != nil {
+			panic(err)
+		}
+
+		err = models_tmpl.Execute(models_file, model)
+		if err != nil {
+			panic(err)
+		}
+		models_file.Close()
+
+	}
+
+}
+
 var gmodelTemplate = `
 package models
 
@@ -170,37 +165,32 @@ import (
 // @Description App type information
 type {{.Name}} struct {
 	{{range .Fields}} {{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}
-	{{end}}
-}
+	{{end}}}
 
 
 // {{.Name}}Post model info
 // @Description {{.Name}}Post type information
 type {{.Name}}Post struct {
-	{{range .Fields}} {{if .Post}} {{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}{{end}}
-	{{end}}
-}
+	{{range .Fields}} {{if .Post}} {{.Name}} {{.Type}} {{.BackTick}}{{.Annotation}}{{.BackTick}}{{end}}
+	{{end}}}
 
 // {{.Name}}Get model info
 // @Description {{.Name}}Get type information
 type {{.Name}}Get struct {
-{{range .Fields}} {{if .Get}}	{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}} {{end}}
- {{end}}
-}
+	{{range .Fields}} {{if .Get}}	{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}} {{end}}
+	{{end}}}
 
 // {{.Name}}Put model info
 // @Description {{.Name}}Put type information
 type {{.Name}}Put struct {
-	{{range .Fields}} {{if .Put}} {{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}} {{ end }}
-	{{end}}
-}
+	{{range .Fields}} {{if .Put}} {{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}{{end}}
+	{{end}}}
 
 // {{.Name}}Patch model info
 // @Description {{.Name}}Patch type information
 type {{.Name}}Patch struct {
 	{{range .Fields}}{{if .Patch}}{{.Name}} {{.Type}}  {{.BackTick}}{{.Annotation}}{{.BackTick}}{{end}}
-	{{end}}
-}
+	{{end}}}
 
 `
 
@@ -414,6 +404,39 @@ func ReturnSession() (*gorm.DB,error) {
 
 }
 
+`
+
+var nosqlTemplateModel = `
+package nosqlmodels
 
 
+// {{.Name}} Database model info
+// @Description App type information
+type {{.Name}} struct {
+	{{range .Fields}} {{.Name}} {{.Type}}  {{.BackTick}}{{.MongoAnnotation}}{{.BackTick}}
+	{{end}}}
+
+// {{.Name}}Post model info
+// @Description {{.Name}}Post type information
+type {{.Name}}Post struct {
+	{{range .Fields}} {{if .Post}} {{.Name}} {{.Type}}  {{.BackTick}}{{.MongoAnnotation}}{{.BackTick}}{{end}}
+	{{end}}}
+
+// {{.Name}}Get model info
+// @Description {{.Name}}Get type information
+type {{.Name}}Get struct {
+{{range .Fields}} {{if .Get}}	{{.Name}} {{.Type}}  {{.BackTick}}{{.MongoAnnotation}}{{.BackTick}} {{end}}
+{{end}}}
+
+// {{.Name}}Put model info
+// @Description {{.Name}}Put type information
+type {{.Name}}Put struct {
+	{{range .Fields}} {{if .Put}} {{.Name}} {{.Type}}  {{.BackTick}}{{.MongoAnnotation}}{{.BackTick}} {{end}}
+	{{end}}}
+
+// {{.Name}}Patch model info
+// @Description {{.Name}}Patch type information
+type {{.Name}}Patch struct {
+	{{range .Fields}}{{if .Patch}}{{.Name}} {{.Type}} {{.BackTick}}{{.MongoAnnotation}}{{.BackTick}}{{end}}
+	{{end}}}
 `

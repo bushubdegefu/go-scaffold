@@ -345,4 +345,9 @@ RPC_PORT=6500
 TRACE_EXPORTER=jaeger
 TRACER_HOST=localhost
 TRACER_PORT=14317
+
+#MONGO DETAILS
+MONGO_URI="mongodb+srv://someone:@some@bluemongo.kuuib.mongodb.net/?retryWrites=true&w=majority&appName=bluemongo
+MONGO_DB_NAME="frame-mongo"
+
 `

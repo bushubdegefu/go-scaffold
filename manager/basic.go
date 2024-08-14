@@ -50,6 +50,23 @@ var (
 			standdatabase()
 		},
 	}
+
+	standarnodbcli = &cobra.Command{
+		Use:   "nodb",
+		Short: "generate basic folder struct without database connection file( with out databse conn struct)",
+		Long:  `generate basic folder struct without database connection file( with out databse conn struct)`,
+		Run: func(cmd *cobra.Command, args []string) {
+			standnodbversion()
+		},
+	}
+	standarnosqldbcli = &cobra.Command{
+		Use:   "nosql",
+		Short: "generate basic folder struct for nosql models for app logic( with out databse n)",
+		Long:  `generate basic folder struct for nosql models for app logic`,
+		Run: func(cmd *cobra.Command, args []string) {
+			standnosqlmongo()
+		},
+	}
 )
 
 func basiccmd() {
@@ -101,10 +118,26 @@ func standdatabase() {
 	temps.CommonCMD()
 }
 
+func standnodbversion() {
+	temps.LoadData()
+	temps.Frame()
+	temps.CommonCMD()
+}
+
+func standnosqlmongo() {
+	temps.LoadData()
+	temps.Frame()
+	temps.MongoDataBaseFrame()
+	temps.NoSQLModelDataFrame()
+	temps.CommonCMD()
+}
+
 func init() {
 	goFrame.AddCommand(basicstruct)
 	goFrame.AddCommand(standardstruct)
 	goFrame.AddCommand(standardrabbit)
 	goFrame.AddCommand(standarpubcli)
 	goFrame.AddCommand(standardbcli)
+	goFrame.AddCommand(standarnodbcli)
+	goFrame.AddCommand(standarnosqldbcli)
 }

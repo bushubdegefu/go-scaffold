@@ -118,7 +118,14 @@ func otelspanstarter(ctx *fiber.Ctx) error {
 }
 
 func dbsessioninjection(ctx *fiber.Ctx) error {
-	db, _ := database.ReturnSession()
+	db, err := database.ReturnSession()
+	if err != nil {
+		return ctx.Status(http.StatusServiceUnavailable).JSON(common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
 	ctx.Locals("db", db)
 	return ctx.Next()
 }
@@ -334,7 +341,14 @@ func NextProdFunc(contx *fiber.Ctx) error {
 }
 
 func dbsessioninjectionprod(ctx *fiber.Ctx) error {
-	db, _ := database.ReturnSession()
+	db, err := database.ReturnSession()
+	if err != nil {
+		return ctx.Status(http.StatusServiceUnavailable).JSON(common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
 	ctx.Locals("db", db)
 	return ctx.Next()
 }
@@ -462,21 +476,18 @@ func init() {
 }
 
 func setupProdRoutes(gapp *fiber.Group) {
-
 	{{range .Models}}
-	gapp.Get("/{{.LowerName}}",NextProdFunc).Name("get_all_{{.LowerName}}s").Get("/{{.LowerName}}", controllers.Get{{.Name}}s)
-	gapp.Get("/{{.LowerName}}/:{{.LowerName}}_id",NextProdFunc).Name("get_one_{{.LowerName}}s").Get("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Get{{.Name}}ByID)
-	gapp.Post("/{{.LowerName}}",NextProdFunc).Name("post_{{.LowerName}}").Post("/{{.LowerName}}", controllers.Post{{.Name}})
-	gapp.Patch("/{{.LowerName}}/:{{.LowerName}}_id",NextProdFunc).Name("patch_{{.LowerName}}").Patch("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Patch{{.Name}})
-	gapp.Delete("/{{.LowerName}}/:{{.LowerName}}_id",NextProdFunc).Name("delete_{{.LowerName}}").Delete("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Delete{{.Name}}).Name("delete_{{.LowerName}}")
-
-	{{range .Relations}}
-	gapp.Post("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id/:{{.LowerParentName}}_id",NextProdFunc).Name("add_{{.LowerFieldName}}{{.LowerParentName}}").Post("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id/:{{.LowerParentName}}_id",controllers.Add{{.FieldName}}{{.ParentName}}s)
-	gapp.Delete("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id/:{{.LowerParentName}}_id",NextProdFunc).Name("delete_{{.LowerFieldName}}{{.LowerParentName}}").Delete("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id/:{{.LowerParentName}}_id",controllers.Delete{{.FieldName}}{{.ParentName}}s)
+	gapp.Get("/{{.LowerName}}",NextFunc).Name("get_all_{{.LowerName}}s").Get("/{{.LowerName}}", controllers.Get{{.Name}}s)
+	gapp.Get("/{{.LowerName}}/:{{.LowerName}}_id",NextFunc).Name("get_one_{{.LowerName}}s").Get("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Get{{.Name}}ByID)
+	gapp.Post("/{{.LowerName}}",NextFunc).Name("post_{{.LowerName}}").Post("/{{.LowerName}}", controllers.Post{{.Name}})
+	gapp.Patch("/{{.LowerName}}/:{{.LowerName}}_id",NextFunc).Name("patch_{{.LowerName}}").Patch("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Patch{{.Name}})
+	gapp.Delete("/{{.LowerName}}/:{{.LowerName}}_id",NextFunc).Name("delete_{{.LowerName}}").Delete("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Delete{{.Name}}).Name("delete_{{.LowerName}}")
+	{{range .Relations}}{{if .OtM}}
+	gapp.Patch("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id",NextFunc).Name("add_{{.LowerFieldName}}{{.LowerParentName}}").Patch("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id",controllers.Add{{.FieldName}}{{.ParentName}}s)
+	gapp.Delete("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id",NextFunc).Name("delete_{{.LowerFieldName}}{{.LowerParentName}}").Delete("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id",controllers.Delete{{.FieldName}}{{.ParentName}}s){{end}}
+	{{if .MtM}}gapp.Post("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id/:{{.LowerParentName}}_id",NextFunc).Name("add_{{.LowerFieldName}}{{.LowerParentName}}").Post("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id/:{{.LowerParentName}}_id",controllers.Add{{.FieldName}}{{.ParentName}}s)
+	gapp.Delete("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id/:{{.LowerParentName}}_id",NextFunc).Name("delete_{{.LowerFieldName}}{{.LowerParentName}}").Delete("/{{.LowerFieldName}}{{.LowerParentName}}/:{{.LowerFieldName}}_id/:{{.LowerParentName}}_id",controllers.Delete{{.FieldName}}{{.ParentName}}s){{end}}{{end}}
 	{{end}}
-	{{end}}
-
-
 }
 
 `
