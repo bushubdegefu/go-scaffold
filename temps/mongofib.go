@@ -89,7 +89,7 @@ import (
 	"{{.ProjectName}}.com/observe"
 	"{{.ProjectName}}.com/controllers"
 	_ "{{.ProjectName}}.com/docs"
-	"{{.ProjectName}}.com/database"
+	"{{.ProjectName}}.com/nosqlconn"
 	"github.com/spf13/cobra"
 )
 

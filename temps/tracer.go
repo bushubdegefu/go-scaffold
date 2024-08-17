@@ -153,6 +153,17 @@ func FiberAppSpanner(ctx *fiber.Ctx, span_name string ) (context.Context, oteltr
 	return trace, span
 }
 
+func AppSpanner(ctx context.Context, span_name string) (context.Context, oteltrace.Span) {
+	gen, _ := uuid.NewV7()
+	id := gen.String()
+
+	trace, span := AppTracer.Start(ctx, span_name,
+		oteltrace.WithAttributes(attribute.String("id", id)),
+		oteltrace.WithAttributes(attribute.String("request", ctx.Request().String())),
+	)
+
+	return trace, span
+}
 
 type RouteTracer struct {
 	Tracer context.Context

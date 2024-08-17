@@ -1,5 +1,5 @@
-package manager
 
+package manager
 import (
 	"fmt"
 	"os"
@@ -10,8 +10,8 @@ import (
 var (
 	goFrame = &cobra.Command{
 		Use:           "AppMan",
-		Short:         "AppMan – command-line tool to aid structure your projects with gorm",
-		Long:          "command-line tool to aid structure your projects with gorm. It mainly suitable for fiber and echo app",
+		Short:         "AppMan – command-line tool to aid structure you fiber backend projects with gorm",
+		Long:          "Manager File Framed by go frame",
 		Version:       "0.0.0",
 		SilenceErrors: true,
 		SilenceUsage:  true,

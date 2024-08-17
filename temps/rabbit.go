@@ -414,7 +414,7 @@ var (
 )
 
 func startconsumer() {
-	rabbit.RabbitConsumer("esb")
+	messages.RabbitConsumer("esb")
 }
 
 func init() {

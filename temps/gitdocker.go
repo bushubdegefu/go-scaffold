@@ -66,7 +66,7 @@ var dockerIgnore = `
 var dockerConfig = `
 FROM golang:latest
 
-RUN apt install -y libc6 libc-bin
+USER root
 
 RUN apt -y update && apt -y upgrade
 
@@ -74,21 +74,40 @@ RUN apt -y install build-essential pkg-config g++ git cmake yasm
 
 RUN apt install build-essential pkg-config git
 
+RUN apt install -y libc6 libc-bin
+
+RUN apt -y install systemd
+
+RUN apt -y install systemctl
+
 WORKDIR /playground/
 
 COPY docs /playground/
 
-COPY main /playground/
+COPY app /playground/
 
-COPY server.pem  /playground/
+COPY configs/ /playground/configs/
 
-COPY server-key.pem  /playground/
+COPY docs /playground/
 
-COPY configs /playground/
+COPY app.service /etc/systemd/system/
 
-RUN chmod +x main
+COPY haproxy.cfg /etc/haproxy/haproxy.cfg
 
-CMD ["./main","prod"]
+RUN chmod +x app
+
+RUN systemctl daemon-reload
+
+RUN ./app migrate
+
+EXPOSE 7500
+
+RUN systemctl start app
+
+# CMD ["systemctl","start","app"]
+
+CMD ["systemctl","start","app"]
+
  `
 var gitIgnore = `
 configs/*

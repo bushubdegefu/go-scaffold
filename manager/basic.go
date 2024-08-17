@@ -78,6 +78,8 @@ func basiccmd() {
 	temps.PublishFrame()
 	temps.FiberTracerFrame()
 	temps.GitDockerFrame()
+	temps.HaproxyFrame()
+	temps.ServiceFrame()
 	temps.CommonCMD()
 }
 

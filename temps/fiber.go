@@ -315,7 +315,7 @@ import (
 var (
 	{{.AppName}}prodcli= &cobra.Command{
 		Use:   "prod",
-		Short: "Run Development server ",
+		Short: "Run Production server ",
 		Long:  {{.BackTick}}Run {{.AppName}} development server{{.BackTick}},
 		Run: func(cmd *cobra.Command, args []string) {
 			prod_run()
