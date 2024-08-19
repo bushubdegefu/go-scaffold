@@ -86,6 +86,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"github.com/gofiber/swagger"
 	"{{.ProjectName}}.com/configs"
+	"{{.ProjectName}}.com/bluetasks"
 	"{{.ProjectName}}.com/observe"
 	"{{.ProjectName}}.com/controllers"
 	_ "{{.ProjectName}}.com/docs"
@@ -135,13 +136,21 @@ func NextFunc(contx *fiber.Ctx) error {
 }
 
 func fiber_run() {
+		//  Loading Configuration Before App starts
 		configs.AppConfig.SetEnv("dev")
+
+		// Starting Otel Global tracer
 		tp := observe.InitTracer()
 		defer func() {
 			if err := tp.Shutdown(context.Background()); err != nil {
 				log.Printf("Error shutting down tracer provider: %v", err)
 			}
 		}()
+
+		// Starting Task Scheduler ( Running task that run regularly based on the provided configs)
+		schd := bluetasks.ScheduledTasks()
+		defer schd.Stop()
+
 
 		// Basic App Configs
 		body_limit, _ := strconv.Atoi(configs.AppConfig.GetOrDefault("BODY_LIMIT", "70"))
@@ -305,6 +314,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"github.com/gofiber/swagger"
 	"{{.ProjectName}}.com/configs"
+	"{{.ProjectName}}.com/bluetasks"
 	"{{.ProjectName}}.com/observe"
 	"{{.ProjectName}}.com/database"
 	_ "{{.ProjectName}}.com/docs"
@@ -354,13 +364,21 @@ func dbsessioninjectionprod(ctx *fiber.Ctx) error {
 }
 
 func prod_run() {
+		// Loading Configuration Files
 		configs.AppConfig.SetEnv("prod")
+
+		//  Starting Global Otel Tracer
 		tp := observe.InitTracer()
 		defer func() {
 			if err := tp.Shutdown(context.Background()); err != nil {
 				log.Printf("Error shutting down tracer provider: %v", err)
 			}
 		}()
+
+		//  starting scheduled tasks that run regullary with provided time interval
+		schd := bluetasks.ScheduledTasks()
+		defer schd.Stop()
+
 
 		// Basic App Configs
 		body_limit, _ := strconv.Atoi(configs.AppConfig.GetOrDefault("BODY_LIMIT", "70"))

@@ -67,6 +67,14 @@ var (
 			standnosqlmongo()
 		},
 	}
+	standardtaskscli = &cobra.Command{
+		Use:   "tasks",
+		Short: "generate basic folder struct for scheduled task ( generates for tasks that clears log file regullary & changes jwt signature salt regullary",
+		Long:  `"generate basic folder struct for scheduled task ( generates for tasks that clears log file regullary & changes jwt signature salt regullary"`,
+		Run: func(cmd *cobra.Command, args []string) {
+			standtasks()
+		},
+	}
 )
 
 func basiccmd() {
@@ -80,7 +88,14 @@ func basiccmd() {
 	temps.GitDockerFrame()
 	temps.HaproxyFrame()
 	temps.ServiceFrame()
+	temps.TasksFrame()
+	temps.LogFilesFrame()
 	temps.CommonCMD()
+}
+
+func standtasks() {
+	temps.TasksFrame()
+	temps.LogFilesFrame()
 }
 
 func standardcmd() {
@@ -142,4 +157,5 @@ func init() {
 	goFrame.AddCommand(standardbcli)
 	goFrame.AddCommand(standarnodbcli)
 	goFrame.AddCommand(standarnosqldbcli)
+	goFrame.AddCommand(standardtaskscli)
 }

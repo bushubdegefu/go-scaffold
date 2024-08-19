@@ -25,7 +25,7 @@ func KeyCloakFrame() {
 	}
 	defer nosqlconn_file.Close()
 
-	err = rpc_tmpl.Execute(nosqlconn_file, RenderData)
+	err = kc_tmpl.Execute(nosqlconn_file, RenderData)
 	if err != nil {
 		panic(err)
 	}

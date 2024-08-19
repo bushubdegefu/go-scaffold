@@ -139,7 +139,7 @@ func NoSQLModelDataFrame() {
 		if err != nil {
 			panic(err)
 		}
-
+		fmt.Println(RenderData.Models)
 		err = models_tmpl.Execute(models_file, model)
 		if err != nil {
 			panic(err)

@@ -40,6 +40,7 @@ type Relationship struct {
 type Field struct {
 	BackTick        string `json:"back_tick"`
 	Name            string `json:"name"`
+	LowerName       string `json:"lower_name"`
 	Type            string `json:"type"`
 	Annotation      string `json:"annotation"`
 	MongoAnnotation string `json:"mongo_annotation"`
@@ -101,6 +102,7 @@ func LoadData() {
 			RenderData.Models[i].Fields[j].BackTick = "`"
 			cf := strings.Split(RenderData.Models[i].Fields[j].CurdFlag, "$")
 
+			RenderData.Models[i].Fields[j].LowerName = strings.ToLower(RenderData.Models[i].Fields[j].Name)
 			RenderData.Models[i].Fields[j].Get, _ = strconv.ParseBool(cf[0])
 			RenderData.Models[i].Fields[j].Post, _ = strconv.ParseBool(cf[1])
 			RenderData.Models[i].Fields[j].Patch, _ = strconv.ParseBool(cf[2])
