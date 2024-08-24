@@ -14,6 +14,14 @@ var (
 			echogen()
 		},
 	}
+	gechocli = &cobra.Command{
+		Use:   "gecho",
+		Short: "generate the basic graphql structure file to start app using echo",
+		Long:  `generate the basic graphql structure file to start app using echo`,
+		Run: func(cmd *cobra.Command, args []string) {
+			graphechogen()
+		},
+	}
 )
 
 func echogen() {
@@ -21,8 +29,14 @@ func echogen() {
 	temps.EchoFrame()
 	temps.CommonCMD()
 }
+func graphechogen() {
+	temps.LoadData()
+	temps.GraphEchoFrame()
+	temps.CommonCMD()
+}
 
 func init() {
 	goFrame.AddCommand(echocli)
+	goFrame.AddCommand(gechocli)
 
 }

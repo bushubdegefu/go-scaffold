@@ -5,10 +5,10 @@ import (
 	"text/template"
 )
 
-func EchoFrame() {
+func GraphEchoFrame() {
 	//  this is creating manger file inside the manager folder
 	// ############################################################
-	echo_tmpl, err := template.New("RenderData").Parse(devechoTemplate)
+	echo_tmpl, err := template.New("RenderData").Parse(deveGraphEchoTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -32,7 +32,7 @@ func EchoFrame() {
 
 	// ##########################################
 
-	prod_tmpl, err := template.New("RenderData").Parse(prodEchoTemplate)
+	prod_tmpl, err := template.New("RenderData").Parse(prodGraphEchoTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -50,7 +50,7 @@ func EchoFrame() {
 
 }
 
-var devechoTemplate = `
+var deveGraphEchoTemplate = `
 package manager
 
 import (
@@ -65,30 +65,42 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"{{.ProjectName}}.com/configs"
-	"{{.ProjectName}}.com/models/controllers"
+	"{{.ProjectName}}.com/bluetasks"
 	"github.com/spf13/cobra"
 
 	"github.com/swaggo/echo-swagger"
-	_ "{{.ProjectName}}.com/docs"
 )
 
 var (
-	{{.AppName}}devechocli= &cobra.Command{
-		Use:   "dev",
-		Short: "Run Development server ",
+	{{.AppName}}graphdevechocli= &cobra.Command{
+		Use:   "gdev",
+		Short: "Run GraphQL Echo Development server ",
 		Long:  {{.BackTick}}Run Gofr development server{{.BackTick}},
 		Run: func(cmd *cobra.Command, args []string) {
-			echo_run()
+			graph_echo_run()
 		},
 	}
 )
 
-func echo_run() {
+func graph_echo_run() {
 	//  loading dev env file first
 	configs.AppConfig.SetEnv("dev")
 
+	// Starting Otel Global tracer
+	tp := observe.InitTracer()
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	// starting the app
 	app := echo.New()
+
+
+	// Starting Task Scheduler ( Running task that run regularly based on the provided configs)
+	schd := bluetasks.ScheduledTasks()
+	defer schd.Stop()
 
 	//  prometheus metrics middleware
 	app.Use(echoprometheus.NewMiddleware("echo_blue"))
@@ -101,8 +113,6 @@ func echo_run() {
 		StackSize: 1 << 10, // 1 KB
 		LogLevel:  log.ERROR,
 	}))
-
-	app.GET("/docs/*", echoSwagger.WrapHandler)
 
 	setupRoutes(app)
 	// starting on provided port
@@ -127,32 +137,40 @@ func echo_run() {
 }
 
 func init() {
-	goFrame.AddCommand({{.AppName}}devechocli)
-
+	goFrame.AddCommand({{.AppName}}graphdevechocli)
 }
 
 
-func setupRoutes(app *echo.Echo) {
-	gapp := app.Group("/admin")
-	{{range .Models}}
-	gapp.GET("/{{.LowerName}}", controllers.Get{{.Name}}s).Name = "get_all_{{.LowerName}}s"
-	gapp.GET("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Get{{.Name}}ByID).Name = "get_one_{{.LowerName}}s"
-	gapp.POST("/{{.LowerName}}", controllers.Post{{.Name}}).Name = "post_{{.LowerName}}"
-	gapp.PATCH("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Patch{{.Name}}).Name = "patch_{{.LowerName}}"
-	gapp.DELETE("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Delete{{.Name}}).Name = "delete_{{.LowerName}}"
+func setupRoutes(gapp *echo.Echo) {
+	gapp := app.Group("/api/v1")
 
-	{{range .Relations}}
-	gapp.POST("/{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }}",controllers.Add{{.FieldName}}{{.ParentName}}s).Name = "add_{{.LowerFieldName}}{{.LowerParentName}}"
-	gapp.DELETE("/{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }}",controllers.Delete{{.FieldName}}{{.ParentName}}s).Name = "delete_{{.LowerFieldName}}{{.LowerParentName}}"
-	{{end}}
-	{{end}}
+	db, err := database.ReturnSession()
+	if err != nil {
+		panic("Error Connecting to Database")
+	}
 
+	playgroundHandler := playground.Handler("GraphQL", "/query")
 
+	gapp.POST("/admin", func(c echo.Context) error {
+		tracer := ctx.Get("tracer").(*observe.RouteTracer)
+		graphqlHandler := handler.NewDefaultServer(
+			graph.NewExecutableSchema(
+				graph.Config{Resolvers: &graph.Resolver{DB: db, Tracer: tracer}},
+			),
+		)
+		graphqlHandler.ServeHTTP(c.Response(), c.Request())
+		return nil
+	})
+
+	gapp.GET("/playground", func(c echo.Context) error {
+		playgroundHandler.ServeHTTP(c.Response(), c.Request())
+		return nil
+	})
 }
 
 `
 
-var prodEchoTemplate = `
+var prodGraphEchoTemplate = `
 package manager
 
 import (
@@ -167,27 +185,42 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"{{.ProjectName}}.com/configs"
-	"{{.ProjectName}}.com/models/controllers"
+	"{{.ProjectName}}.com/bluetasks"
 	"github.com/spf13/cobra"
 
 	"github.com/swaggo/echo-swagger"
-	_ "{{.ProjectName}}.com/docs"
 )
 
 var (
-	{{.AppName}}prodechocli= &cobra.Command{
-		Use:   "prod",
-		Short: "Run Production Server server ",
+	{{.AppName}}graphprodechocli= &cobra.Command{
+		Use:   "gprod",
+		Short: "Run GraphQL Echo Production Server server ",
 		Long:  {{.BackTick}}Run Production server{{.BackTick}},
 		Run: func(cmd *cobra.Command, args []string) {
-			prod_echo()
+			graph_prod_echo()
 		},
 	}
 )
 
-func prod_echo()) {
+func graph_prod_echo() {
+	//  loading dev env file first
 	configs.AppConfig.SetEnv("prod")
+
+	// Starting Otel Global tracer
+	tp := observe.InitTracer()
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
+	// starting the app
 	app := echo.New()
+
+	// Starting Task Scheduler ( Running task that run regularly based on the provided configs)
+	schd := bluetasks.ScheduledTasks()
+	defer schd.Stop()
+
 	//  prometheus metrics middleware
 	app.Use(echoprometheus.NewMiddleware("echo_blue"))
 
@@ -199,8 +232,6 @@ func prod_echo()) {
 		StackSize: 1 << 10, // 1 KB
 		LogLevel:  log.ERROR,
 	}))
-
-	app.GET("/docs/*", echoSwagger.WrapHandler)
 
 	setupRoutesEchoProd(app)
 	// starting on provided port
@@ -225,25 +256,40 @@ func prod_echo()) {
 }
 
 func init() {
-	goFrame.AddCommand({{.AppName}}prodechocli)
-
+	goFrame.AddCommand({{.AppName}}graphprodechocli)
 }
 
 
 func setupRoutesEchoProd(app *echo.Echo) {
-	gapp := app.Group("/admin")
-	{{range .Models}}
-	gapp.GET("/{{.LowerName}}", controllers.Get{{.Name}}s).Name = "get_all_{{.LowerName}}s"
-	gapp.GET("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Get{{.Name}}ByID).Name = "get_one_{{.LowerName}}s"
-	gapp.POST("/{{.LowerName}}", controllers.Post{{.Name}}).Name = "post_{{.LowerName}}"
-	gapp.PATCH("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Patch{{.Name}}).Name = "patch_{{.LowerName}}"
-	gapp.DELETE("/{{.LowerName}}/:{{.LowerName}}_id", controllers.Delete{{.Name}}).Name = "delete_{{.LowerName}}"
+	gapp := app.Group("/api/v1")
 
-	{{range .Relations}}
-	gapp.POST("/{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }}",controllers.Add{{.FieldName}}{{.ParentName}}s).Name = "add_{{.LowerFieldName}}{{.LowerParentName}}"
-	gapp.DELETE("/{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }}",controllers.Delete{{.FieldName}}{{.ParentName}}s).Name = "delete_{{.LowerFieldName}}{{.LowerParentName}}"
-	{{end}}
-	{{end}}
+	db, err := database.ReturnSession()
+	if err != nil {
+		panic("Error Connecting to Database")
+	}
+
+	graphqlHandler := handler.NewDefaultServer(
+		graph.NewExecutableSchema(
+			graph.Config{Resolvers: &graph.Resolver{DB: db}},
+		),
+	)
+	playgroundHandler := playground.Handler("GraphQL", "/query")
+
+	gapp.POST("/admin", func(c echo.Context) error {
+		tracer := ctx.Get("tracer").(*observe.RouteTracer)
+		graphqlHandler := handler.NewDefaultServer(
+			graph.NewExecutableSchema(
+				graph.Config{Resolvers: &graph.Resolver{DB: db, Tracer: tracer}},
+			),
+		)
+		graphqlHandler.ServeHTTP(c.Response(), c.Request())
+		return nil
+	})
+
+	gapp.GET("/playground", func(c echo.Context) error {
+		playgroundHandler.ServeHTTP(c.Response(), c.Request())
+		return nil
+	})
 
 
 }

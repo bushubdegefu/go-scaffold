@@ -75,6 +75,22 @@ var (
 			standtasks()
 		},
 	}
+	standardpaginationcli = &cobra.Command{
+		Use:   "pagination",
+		Short: "generate basic gorm based pagination functions",
+		Long:  `"generate basic gorm based reuseable pagination functions"`,
+		Run: func(cmd *cobra.Command, args []string) {
+			commongormpagination()
+		},
+	}
+	standardgraphpaginationcli = &cobra.Command{
+		Use:   "gpagination",
+		Short: "generate basic gorm based pagination functions for graphql resolver",
+		Long:  `"generate basic gorm based reuseable pagination functions for graphql resolver"`,
+		Run: func(cmd *cobra.Command, args []string) {
+			commongormgraphqlpagination()
+		},
+	}
 )
 
 func basiccmd() {
@@ -96,6 +112,16 @@ func basiccmd() {
 func standtasks() {
 	temps.TasksFrame()
 	temps.LogFilesFrame()
+}
+
+func commongormpagination() {
+	temps.LoadData()
+	temps.CommonFrame()
+}
+
+func commongormgraphqlpagination() {
+	temps.LoadData()
+	temps.CommonGraphQLFrame()
 }
 
 func standardcmd() {
@@ -158,4 +184,6 @@ func init() {
 	goFrame.AddCommand(standarnodbcli)
 	goFrame.AddCommand(standarnosqldbcli)
 	goFrame.AddCommand(standardtaskscli)
+	goFrame.AddCommand(standardpaginationcli)
+	goFrame.AddCommand(standardgraphpaginationcli)
 }
