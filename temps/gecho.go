@@ -82,6 +82,24 @@ var (
 	}
 )
 
+func otelechospanstarter(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		routeName := ctx.Path() + "_" + strings.ToLower(ctx.Request().Method)
+		tracer, span := observe.EchoAppSpanner(ctx, fmt.Sprintf("%v-root", routeName))
+		ctx.Set("tracer", &observe.RouteTracer{Tracer: tracer, Span: span})
+
+		// Process request
+		err := next(ctx)
+		if err != nil {
+			return err
+		}
+
+		span.SetAttributes(attribute.String("response", string(ctx.Response().Status)))
+		span.End()
+		return nil
+	}
+}
+
 func graph_echo_run() {
 	//  loading dev env file first
 	configs.AppConfig.SetEnv("dev")
@@ -97,10 +115,8 @@ func graph_echo_run() {
 	// starting the app
 	app := echo.New()
 
-
-	// Starting Task Scheduler ( Running task that run regularly based on the provided configs)
-	schd := bluetasks.ScheduledTasks()
-	defer schd.Stop()
+	// the Otel spanner middleware
+	app.Use(otelechospanstarter)
 
 	//  prometheus metrics middleware
 	app.Use(echoprometheus.NewMiddleware("echo_blue"))
@@ -140,32 +156,35 @@ func init() {
 	goFrame.AddCommand({{.AppName}}graphdevechocli)
 }
 
-
-func setupRoutes(gapp *echo.Echo) {
+func setupRoutes(app *echo.Echo) {
 	gapp := app.Group("/api/v1")
 
-	db, err := database.ReturnSession()
-	if err != nil {
-		panic("Error Connecting to Database")
-	}
+	// playgroundHandler := playground.Handler("GraphQL", "/query")
 
-	playgroundHandler := playground.Handler("GraphQL", "/query")
-
-	gapp.POST("/admin", func(c echo.Context) error {
+	gapp.POST("/admin", func(ctx echo.Context) error {
+		//  Connecting to Databse
+		db, err := database.ReturnSession()
+		if err != nil {
+			log.Errorf("Error Connecting to Database: %v\n", err)
+		}
+		//  Geting thracer
 		tracer := ctx.Get("tracer").(*observe.RouteTracer)
+
+		//  Schema handler
 		graphqlHandler := handler.NewDefaultServer(
 			graph.NewExecutableSchema(
 				graph.Config{Resolvers: &graph.Resolver{DB: db, Tracer: tracer}},
 			),
 		)
-		graphqlHandler.ServeHTTP(c.Response(), c.Request())
+
+		graphqlHandler.ServeHTTP(ctx.Response(), ctx.Request())
 		return nil
 	})
 
-	gapp.GET("/playground", func(c echo.Context) error {
-		playgroundHandler.ServeHTTP(c.Response(), c.Request())
-		return nil
-	})
+	// gapp.GET("/playground", func(ctx echo.Context) error {
+	// 	playgroundHandler.ServeHTTP(ctx.Response(), ctx.Request())
+	// 	return nil
+	// })
 }
 
 `
@@ -202,6 +221,7 @@ var (
 	}
 )
 
+
 func graph_prod_echo() {
 	//  loading dev env file first
 	configs.AppConfig.SetEnv("prod")
@@ -217,9 +237,8 @@ func graph_prod_echo() {
 	// starting the app
 	app := echo.New()
 
-	// Starting Task Scheduler ( Running task that run regularly based on the provided configs)
-	schd := bluetasks.ScheduledTasks()
-	defer schd.Stop()
+	// the Otel spanner middleware
+	app.Use(otelechospanstarter)
 
 	//  prometheus metrics middleware
 	app.Use(echoprometheus.NewMiddleware("echo_blue"))
@@ -260,38 +279,34 @@ func init() {
 }
 
 
-func setupRoutesEchoProd(app *echo.Echo) {
+func setupRoutes(app *echo.Echo) {
 	gapp := app.Group("/api/v1")
 
-	db, err := database.ReturnSession()
-	if err != nil {
-		panic("Error Connecting to Database")
-	}
+	// playgroundHandler := playground.Handler("GraphQL", "/query")
 
-	graphqlHandler := handler.NewDefaultServer(
-		graph.NewExecutableSchema(
-			graph.Config{Resolvers: &graph.Resolver{DB: db}},
-		),
-	)
-	playgroundHandler := playground.Handler("GraphQL", "/query")
-
-	gapp.POST("/admin", func(c echo.Context) error {
+	gapp.POST("/admin", func(ctx echo.Context) error {
+		//  Connecting to Databse
+		db, err := database.ReturnSession()
+		if err != nil {
+			log.Errorf("Error Connecting to Database: %v\n", err)
+		}
+		//  Geting thracer
 		tracer := ctx.Get("tracer").(*observe.RouteTracer)
+
+		//  Schema handler
 		graphqlHandler := handler.NewDefaultServer(
 			graph.NewExecutableSchema(
 				graph.Config{Resolvers: &graph.Resolver{DB: db, Tracer: tracer}},
 			),
 		)
-		graphqlHandler.ServeHTTP(c.Response(), c.Request())
+
+		graphqlHandler.ServeHTTP(ctx.Response(), ctx.Request())
 		return nil
 	})
 
-	gapp.GET("/playground", func(c echo.Context) error {
-		playgroundHandler.ServeHTTP(c.Response(), c.Request())
-		return nil
-	})
-
-
+	// gapp.GET("/playground", func(ctx echo.Context) error {
+	// 	playgroundHandler.ServeHTTP(ctx.Response(), ctx.Request())
+	// 	return nil
+	// })
 }
-
 `

@@ -58,9 +58,7 @@ func genfiber() {
 }
 func genfibercurd() {
 	temps.LoadData()
-	temps.ModelDataFrame()
 	temps.CurdFrameFiber()
-	temps.TestFrameFiber()
 	temps.CommonCMD()
 }
 func gengorm() {

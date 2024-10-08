@@ -18,14 +18,14 @@ func CurdFrameEcho() {
 
 	// Create the models directory if it does not exist
 	// #################################################
-	err = os.MkdirAll("models/controllers", os.ModePerm)
+	err = os.MkdirAll("controllers", os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
 
 	for _, model := range RenderData.Models {
 
-		folder_path := fmt.Sprintf("models/controllers/%v_controller.go", model.Name)
+		folder_path := fmt.Sprintf("controllers/%v_controller.go", model.Name)
 		folder_path = strings.ToLower(folder_path)
 		curd_file, err := os.Create(folder_path)
 		if err != nil {
@@ -75,10 +75,8 @@ import (
 // @Failure 404 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}} [get]
 func Get{{.Name}}s(contx echo.Context) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Get{{.Name}}s-root")
-	defer span.End()
+	//  Geting tracer
+	tracer := contx.Get("tracer").(*observe.RouteTracer)
 
 	//  parsing Query Prameters
 	Page, _ := strconv.Atoi(contx.QueryParam("page"))
@@ -92,11 +90,11 @@ func Get{{.Name}}s(contx echo.Context) error {
 		})
 	}
 
-	//  Getting Database connection
-	db := database.ReturnSession()
+	//  Geting dbsession
+     db := contx.Get("db").(*gorm.DB)
 
 	//  querying result with pagination using gorm function
-	result, err := common.PaginationPureModel(db, models.{{.Name}}{}, []models.{{.Name}}{}, uint(Page), uint(Limit), tracer)
+	result, err := common.PaginationPureModel(db, models.{{.Name}}{}, []models.{{.Name}}{}, uint(Page), uint(Limit), tracer.Tracer)
 	if err != nil {
 		return contx.JSON(http.StatusInternalServerError, common.ResponseHTTP{
 			Success: false,
@@ -121,10 +119,8 @@ func Get{{.Name}}s(contx echo.Context) error {
 // @Failure 404 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [get]
 func Get{{.Name}}ByID(contx echo.Context) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Get{{.Name}}ByID-root")
-	defer span.End()
+	//  Geting tracer
+		tracer := contx.Get("tracer").(*observe.RouteTracer)
 
 
 	//  parsing Query Prameters
@@ -137,23 +133,16 @@ func Get{{.Name}}ByID(contx echo.Context) error {
 		})
 	}
 
-	//  Getting Database connection
-	db := database.ReturnSession()
+	//  Geting dbsession
+     db := contx.Get("db").(*gorm.DB)
 
 	// Preparing and querying database using Gorm
 	var {{.LowerName}}s_get models.{{.Name}}Get
 	var {{.LowerName}}s models.{{.Name}}
-	if res := db.WithContext(tracer).Model(&models.{{.Name}}{}).Preload(clause.Associations).Where("id = ?", id).First(&{{.LowerName}}s); res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
-				Success: false,
-				Message: "{{.Name}} not found",
-				Data:    nil,
-			})
-		}
-		return contx.JSON(http.StatusInternalServerError, common.ResponseHTTP{
+	if res := db.WithContext(tracer.Tracer).Model(&models.{{.Name}}{}).Preload(clause.Associations).Where("id = ?", id).First(&{{.LowerName}}s); res.Error != nil {
+		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
 			Success: false,
-			Message: "Error retrieving {{.Name}}",
+			Message: res.Error.Error(),
 			Data:    nil,
 		})
 	}
@@ -182,13 +171,11 @@ func Get{{.Name}}ByID(contx echo.Context) error {
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}s [post]
 func Post{{.Name}}(contx echo.Context) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Post{{.Name}}-root")
-	defer span.End()
+	//  Geting tracer
+		tracer := contx.Get("tracer").(*observe.RouteTracer)
 
-	// Database connection
-	db := database.ReturnSession()
+	//  Geting dbsession
+		db := contx.Get("db").(*gorm.DB)
 
 	// validator initialization
 	validate := validator.New()
@@ -220,7 +207,7 @@ func Post{{.Name}}(contx echo.Context) error {
 	{{.LowerName}}.Description = posted_{{.LowerName}}.Description
 
 	//  start transaction to database
-	tx := db.WithContext(tracer).Begin()
+	tx := db.WithContext(tracer.Tracer).Begin()
 
 	// add  data using transaction if values are valid
 	if err := tx.Create(&{{.LowerName}}).Error; err != nil {
@@ -257,13 +244,11 @@ func Post{{.Name}}(contx echo.Context) error {
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [patch]
 func Patch{{.Name}}(contx echo.Context) error {
-	// // Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Patch{{.Name}}-root")
-	defer span.End()
+	//  Geting tracer
+		tracer := contx.Get("tracer").(*observe.RouteTracer)
 
-	// Get database connection
-	db := database.ReturnSession()
+	//  Geting dbsession
+		db := contx.Get("db").(*gorm.DB)
 
 	//  initialize data validator
 	validate := validator.New()
@@ -300,22 +285,12 @@ func Patch{{.Name}}(contx echo.Context) error {
 	// startng update transaction
 	var {{.LowerName}} models.{{.Name}}
 	{{.LowerName}}.ID = uint(id)
-	tx := db.WithContext(tracer).Begin()
+	tx := db.WithContext(tracer.Tracer).Begin()
 
 	// Check if the record exists
-	if err := db.WithContext(tracer).First(&{{.LowerName}}, {{.LowerName}}.ID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// If the record doesn't exist, return an error response
-			tx.Rollback()
-			return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
-				Success: false,
-				Message: "{{.Name}} not found",
-				Data:    nil,
-			})
-		}
-		// If there's an unexpected error, return an internal server error response
+	if err := db.WithContext(tracer.Tracer).First(&{{.LowerName}}, {{.LowerName}}.ID).Error; err != nil {
 		tx.Rollback()
-		return contx.JSON(http.StatusInternalServerError, common.ResponseHTTP{
+		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
 			Success: false,
 			Message: err.Error(),
 			Data:    nil,
@@ -323,7 +298,7 @@ func Patch{{.Name}}(contx echo.Context) error {
 	}
 
 	// Update the record
-	if err := db.WithContext(tracer).Model(&{{.LowerName}}).UpdateColumns(*patch_{{.LowerName}}).Error; err != nil {
+	if err := db.WithContext(tracer.Tracer).Model(&{{.LowerName}}).UpdateColumns(*patch_{{.LowerName}}).Error; err != nil {
 		tx.Rollback()
 		return contx.JSON(http.StatusInternalServerError, common.ResponseHTTP{
 			Success: false,
@@ -353,10 +328,8 @@ func Patch{{.Name}}(contx echo.Context) error {
 // @Failure 503 {object} common.ResponseHTTP{}
 // @Router /{{.LowerName}}/{{ "{" }}{{.LowerName}}_id{{ "}" }} [delete]
 func Delete{{.Name}}(contx echo.Context) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Delete{{.Name}}-root")
-	defer span.End()
+	//  Geting tracer
+		tracer := contx.Get("tracer").(*observe.RouteTracer)
 
 	// get deleted {{.LowerName}} attributes to return
 	var {{.LowerName}} models.{{.Name}}
@@ -371,25 +344,18 @@ func Delete{{.Name}}(contx echo.Context) error {
 		})
 	}
 
-	// Getting Database connection
-	db := database.ReturnSession()
+	//  Geting dbsession
+		db := contx.Get("db").(*gorm.DB)
 
 	// perform delete operation if the object exists
-	tx := db.WithContext(tracer).Begin()
+	tx := db.WithContext(tracer.Tracer).Begin()
 
 	// first getting {{.LowerName}} and checking if it exists
-	if err := db.Where("id = ?", id).First(&{{.LowerName}}).Error; err != nil {
+	if err := db.WithContext(tracer.Tracer).Where("id = ?", id).First(&{{.LowerName}}).Error; err != nil {
 		tx.Rollback()
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
-				Success: false,
-				Message: "{{.Name}} not found",
-				Data:    nil,
-			})
-		}
-		return contx.JSON(http.StatusInternalServerError, common.ResponseHTTP{
+		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
 			Success: false,
-			Message: "Error retrieving {{.LowerName}}",
+			Message: err.Error(),
 			Data:    nil,
 		})
 	}
@@ -434,13 +400,11 @@ func Delete{{.Name}}(contx echo.Context) error {
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [post]
 func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Add{{.FieldName}}{{.ParentName}}s-root")
-	defer span.End()
+	//  Geting tracer
+	tracer := contx.Get("tracer").(*observe.RouteTracer)
 
-	//  database connection
-	db := database.ReturnSession()
+	//  Geting dbsession
+		db := contx.Get("db").(*gorm.DB)
 
 	// validate path params
 	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Param("{{.LowerFieldName}}_id"))
@@ -464,8 +428,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 
 	// fetching {{.LowerParentName}} to be added
 	var {{.LowerParentName}} models.{{.ParentName}}
-	{{.LowerParentName}}.ID = uint({{.LowerParentName}}_id)
-	if res := db.Find(&{{.LowerParentName}}); res.Error != nil {
+	if res := db.WithContext(tracer.Tracer).Where(" id = ? ",uint({{.LowerParentName}}_id)).First(&{{.LowerParentName}}); res.Error != nil {
 		return contx.JSON(http.StatusServiceUnavailable, common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -475,8 +438,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 
 	//  {{.LowerParentName}}ending assocation
 	var {{.LowerFieldName}} models.{{.FieldName}}
-	{{.LowerFieldName}}.ID = uint({{.LowerFieldName}}_id)
-	if err := db.Find(&{{.LowerFieldName}}); err.Error != nil {
+	if err := db.WithContext(tracer.Tracer).Where(" id = ? ",uint({{.LowerFieldName}}_id)).First(&{{.LowerFieldName}}); err.Error != nil {
 		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
 			Success: false,
 			Message: "Record not Found",
@@ -484,8 +446,8 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 		})
 	}
 
-	tx := db.WithContext(tracer).Begin()
-	if err := db.WithContext(tracer).Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").Append(&{{.LowerParentName}}); err != nil {
+	tx := db.WithContext(tracer.Tracer).Begin()
+	if err := db.WithContext(tracer.Tracer).Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").Append(&{{.LowerParentName}}); err != nil {
 		tx.Rollback()
 		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
 			Success: false,
@@ -517,13 +479,11 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 // @Failure 500 {object} common.ResponseHTTP{}
 // @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [delete]
 func Delete{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Delete{{.FieldName}}{{.ParentName}}s-root")
-	defer span.End()
+	//  Geting tracer
+		tracer := contx.Get("tracer").(*observe.RouteTracer)
 
-	//Connect to Database
-	db := database.ReturnSession()
+	//  Geting dbsession
+		db := contx.Get("db").(*gorm.DB)
 
 	// validate path params
 	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Param("{{.LowerFieldName}}_id"))
@@ -566,8 +526,8 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 	}
 
 	// removing {{.LowerParentName}}
-	tx := db.WithContext(tracer).Begin()
-	if err := db.WithContext(tracer).Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").Delete(&{{.LowerParentName}}); err != nil {
+	tx := db.WithContext(tracer.Tracer).Begin()
+	if err := db.WithContext(tracer.Tracer).Model(&{{.LowerFieldName}}).Association("{{.ParentName}}s").Delete(&{{.LowerParentName}}); err != nil {
 		tx.Rollback()
 		return contx.JSON(http.StatusNonAuthoritativeInfo, common.ResponseHTTP{
 			Success: false,
@@ -606,13 +566,12 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [patch]
 func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Add{{.FieldName}}{{.ParentName}}s-root")
-	defer span.End()
+	//  Geting tracer
+//  Geting tracer
+	tracer := contx.Get("tracer").(*observe.RouteTracer)
 
-	//  database connection
-	db := database.ReturnSession()
+	//  Geting dbsession
+		db := contx.Get("db").(*gorm.DB)
 
 	// validate path params
 	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Param("{{.LowerFieldName}}_id"))
@@ -624,9 +583,9 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 		})
 	}
 
-	// fetching Endpionts
+	// fetching relation element
 	var {{.LowerFieldName}} models.{{.FieldName}}
-	if res := db.WithContext(tracer).Model(&models.{{.FieldName}}{}).Where("id = ?", {{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); res.Error != nil {
+	if res := db.WithContext(tracer.Tracer).Model(&models.{{.FieldName}}{}).Where("id = ?", {{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); res.Error != nil {
 		return contx.JSON(http.StatusServiceUnavailable, common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -637,7 +596,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 	// fetching {{.LowerFieldName}} to be added
 	{{.LowerParentName}}_id, _ := strconv.Atoi(contx.QueryParam("{{.LowerParentName}}_id"))
 	var {{.LowerParentName}} models.{{.ParentName}}
-	if res := db.WithContext(tracer).Model(&models.{{.ParentName}}{}).Where("id = ?", {{.LowerParentName}}_id).First(&{{.LowerParentName}}); res.Error != nil {
+	if res := db.WithContext(tracer.Tracer).Model(&models.{{.ParentName}}{}).Where("id = ?", {{.LowerParentName}}_id).First(&{{.LowerParentName}}); res.Error != nil {
 		return contx.JSON(http.StatusServiceUnavailable, common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -647,9 +606,9 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 
 	// startng update transaction
 
-	tx := db.WithContext(tracer).Begin()
+	tx := db.WithContext(tracer.Tracer).Begin()
 	//  Adding one to many Relation
-	if err := db.WithContext(tracer).Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").Append(&{{.LowerFieldName}}); err != nil {
+	if err := db.WithContext(tracer.Tracer).Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").Append(&{{.LowerFieldName}}); err != nil {
 		tx.Rollback()
 		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
 			Success: false,
@@ -679,13 +638,11 @@ func Add{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 // @Failure 400 {object} common.ResponseHTTP{}
 // @Router /{{.LowerParentName}}{{.LowerFieldName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }} [delete]
 func Delete{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
-	// Starting tracer context and tracer
-	ctx := context.Background()
-	tracer, span := observe.AppSpanner(ctx, "Delete{{.FieldName}}{{.ParentName}}s-root")
-	defer span.End()
+	//  Geting tracer
+		tracer := contx.Get("tracer").(*observe.RouteTracer)
 
-	// Database Connection
-	db := database.ReturnSession()
+	//  Geting dbsession
+		db := contx.Get("db").(*gorm.DB)
 
 	// validate path params
 	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Param("{{.LowerFieldName}}_id"))
@@ -699,7 +656,7 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 
 	// Getting {{.FieldName}}
 	var {{.LowerFieldName}} models.{{.FieldName}}
-	if res := db.WithContext(tracer).Model(&models.{{.FieldName}}{}).Where("id = ?", {{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); res.Error != nil {
+	if res := db.WithContext(tracer.Tracer).Model(&models.{{.FieldName}}{}).Where("id = ?", {{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); res.Error != nil {
 		return contx.JSON(http.StatusServiceUnavailable, common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -710,7 +667,7 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 	// fetching {{.LowerParentName}} to be added
 	var {{.LowerParentName}} models.{{.ParentName}}
 	{{.LowerParentName}}_id, _ := strconv.Atoi(contx.QueryParam("{{.LowerParentName}}_id"))
-	if res := db.WithContext(tracer).Model(&models.{{.ParentName}}{}).Where("id = ?", {{.LowerParentName}}_id).First(&{{.LowerParentName}}); res.Error != nil {
+	if res := db.WithContext(tracer.Tracer).Model(&models.{{.ParentName}}{}).Where("id = ?", {{.LowerParentName}}_id).First(&{{.LowerParentName}}); res.Error != nil {
 		return contx.JSON(http.StatusServiceUnavailable, common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -719,8 +676,8 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
 	}
 
 	// Removing {{.FieldName}} From {{.ParentName}}
-	tx := db.WithContext(tracer).Begin()
-	if err := db.WithContext(tracer).Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").Delete(&{{.LowerFieldName}}); err != nil {
+	tx := db.WithContext(tracer.Tracer).Begin()
+	if err := db.WithContext(tracer.Tracer).Model(&{{.LowerParentName}}).Association("{{.FieldName}}s").Delete(&{{.LowerFieldName}}); err != nil {
 		tx.Rollback()
 		return contx.JSON(http.StatusNotFound, common.ResponseHTTP{
 			Success: false,

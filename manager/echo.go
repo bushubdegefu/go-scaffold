@@ -22,6 +22,14 @@ var (
 			graphechogen()
 		},
 	}
+	gechotestcli = &cobra.Command{
+		Use:   "techo",
+		Short: "generate the basic curd test for echo endpoints",
+		Long:  `"generate the basic curd test for echo endpoints"`,
+		Run: func(cmd *cobra.Command, args []string) {
+			graphechotest()
+		},
+	}
 )
 
 func echogen() {
@@ -34,9 +42,15 @@ func graphechogen() {
 	temps.GraphEchoFrame()
 	temps.CommonCMD()
 }
+func graphechotest() {
+	temps.LoadData()
+	temps.TestFrameEcho()
+	temps.CommonCMD()
+}
 
 func init() {
 	goFrame.AddCommand(echocli)
 	goFrame.AddCommand(gechocli)
+	goFrame.AddCommand(gechotestcli)
 
 }

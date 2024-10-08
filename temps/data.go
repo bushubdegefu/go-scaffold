@@ -6,7 +6,18 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 )
+
+// CapitalizeFirstLetter capitalizes the first letter of the input string
+func CapitalizeFirstLetter(s string) string {
+	if len(s) == 0 {
+		return s // Return empty string if input is empty
+	}
+
+	// Convert the first letter to uppercase and concatenate with the rest of the string
+	return string(unicode.ToUpper(rune(s[0]))) + s[1:]
+}
 
 // Define a struct to match the structure of your JSON data
 type Data struct {
@@ -28,17 +39,19 @@ type Model struct {
 }
 
 type Relationship struct {
-	ParentName      string `json:"parent_name"`
-	LowerParentName string `json:"lower_parent_name"`
-	FieldName       string `json:"field_name"`
-	LowerFieldName  string `json:"lower_field_name"`
-	MtM             bool   `json:"mtm"`
-	OtM             bool   `json:"otm"`
-	MtO             bool   `json:"mto"`
+	ParentName      string  `json:"parent_name"`
+	LowerParentName string  `json:"lower_parent_name"`
+	FieldName       string  `json:"field_name"`
+	LowerFieldName  string  `json:"lower_field_name"`
+	ParentFields    []Field `json:"parent_fields"`
+	ChildFields     []Field `json:"child_fields"`
+	MtM             bool    `json:"mtm"`
+	OtM             bool    `json:"otm"`
+	MtO             bool    `json:"mto"`
+	BackTick        string  `json:"back_tick"`
 }
 
 type Field struct {
-	BackTick        string `json:"back_tick"`
 	Name            string `json:"name"`
 	LowerName       string `json:"lower_name"`
 	Type            string `json:"type"`
@@ -54,6 +67,7 @@ type Field struct {
 	MtM             bool   `json:"mtm"`
 	ProjectName     string `json:"project_name"`
 	AppName         string `json:"app_name"`
+	BackTick        string `json:"back_tick"`
 }
 
 var RenderData Data
@@ -83,6 +97,24 @@ func LoadData() {
 		RenderData.Models[i].LowerName = strings.ToLower(RenderData.Models[i].Name)
 		RenderData.Models[i].AppName = RenderData.AppName
 		RenderData.Models[i].ProjectName = RenderData.ProjectName
+		RenderData.BackTick = "`"
+
+		//#####################################
+		for j := 0; j < len(RenderData.Models[i].Fields); j++ {
+			RenderData.Models[i].Fields[j].BackTick = "`"
+			cf := strings.Split(RenderData.Models[i].Fields[j].CurdFlag, "$")
+			RenderData.Models[i].Fields[j].LowerName = strings.ToLower(RenderData.Models[i].Fields[j].Name)
+			RenderData.Models[i].Fields[j].UpperType = CapitalizeFirstLetter(RenderData.Models[i].Fields[j].Type)
+			RenderData.Models[i].Fields[j].Get, _ = strconv.ParseBool(cf[0])
+			RenderData.Models[i].Fields[j].Post, _ = strconv.ParseBool(cf[1])
+			RenderData.Models[i].Fields[j].Patch, _ = strconv.ParseBool(cf[2])
+			RenderData.Models[i].Fields[j].Put, _ = strconv.ParseBool(cf[3])
+			RenderData.Models[i].Fields[j].AppName = RenderData.AppName
+			RenderData.Models[i].Fields[j].ProjectName = RenderData.ProjectName
+			RenderData.Models[i].Fields[j].BackTick = "`"
+
+		}
+		//#####################################
 		rl_list := make([]Relationship, 0)
 		for k := 0; k < len(RenderData.Models[i].RlnModel); k++ {
 			rmf := strings.Split(RenderData.Models[i].RlnModel[k], "$")
@@ -94,24 +126,12 @@ func LoadData() {
 				MtM:             rmf[1] == "mtm",
 				OtM:             rmf[1] == "otm",
 				MtO:             rmf[1] == "mto",
+				BackTick:        "`",
 			}
+			cur_relation.ParentFields = RenderData.Models[i].Fields
 			rl_list = append(rl_list, cur_relation)
 			RenderData.Models[i].Relations = rl_list
 		}
 
-		for j := 0; j < len(RenderData.Models[i].Fields); j++ {
-			RenderData.Models[i].Fields[j].BackTick = "`"
-			cf := strings.Split(RenderData.Models[i].Fields[j].CurdFlag, "$")
-
-			RenderData.Models[i].Fields[j].LowerName = strings.ToLower(RenderData.Models[i].Fields[j].Name)
-			RenderData.Models[i].Fields[j].UpperType = strings.ToUpper(RenderData.Models[i].Fields[j].Type)
-			RenderData.Models[i].Fields[j].Get, _ = strconv.ParseBool(cf[0])
-			RenderData.Models[i].Fields[j].Post, _ = strconv.ParseBool(cf[1])
-			RenderData.Models[i].Fields[j].Patch, _ = strconv.ParseBool(cf[2])
-			RenderData.Models[i].Fields[j].Put, _ = strconv.ParseBool(cf[3])
-			RenderData.Models[i].Fields[j].AppName = RenderData.AppName
-			RenderData.Models[i].Fields[j].ProjectName = RenderData.ProjectName
-
-		}
 	}
 }

@@ -147,16 +147,9 @@ func Get{{.Name}}ByID(contx *fiber.Ctx) error {
 	var {{.LowerName}}s_get models.{{.Name}}Get
 	var {{.LowerName}}s models.{{.Name}}
 	if res := db.WithContext(tracer.Tracer).Model(&models.{{.Name}}{}).Preload(clause.Associations).Where("id = ?", id).First(&{{.LowerName}}s); res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
-				Success: false,
-				Message: "{{.Name}} not found",
-				Data:    nil,
-			})
-		}
-		return contx.Status(http.StatusInternalServerError).JSON(common.ResponseHTTP{
+		return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
 			Success: false,
-			Message: "Error retrieving {{.Name}}",
+			Message: res.Error.Error(),
 			Data:    nil,
 		})
 	}
@@ -309,19 +302,9 @@ func Patch{{.Name}}(contx *fiber.Ctx) error {
 	tx := db.WithContext(tracer.Tracer).Begin()
 
 	// Check if the record exists
-	if err := db.WithContext(tracer.Tracer).First(&{{.LowerName}}, {{.LowerName}}.ID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// If the record doesn't exist, return an error response
-			tx.Rollback()
-			return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
-				Success: false,
-				Message: "{{.Name}} not found",
-				Data:    nil,
-			})
-		}
-		// If there's an unexpected error, return an internal server error response
+	if err := db.WithContext(tracer.Tracer).Where("id = ? ", id).First(&{{.LowerName}}).Error; err != nil {
 		tx.Rollback()
-		return contx.Status(http.StatusInternalServerError).JSON(common.ResponseHTTP{
+		return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
 			Success: false,
 			Message: err.Error(),
 			Data:    nil,
@@ -386,24 +369,17 @@ func Delete{{.Name}}(contx *fiber.Ctx) error {
 	tx := db.WithContext(tracer.Tracer).Begin()
 
 	// first getting {{.LowerName}} and checking if it exists
-	if err := db.Where("id = ?", id).First(&{{.LowerName}}).Error; err != nil {
+	if err := db.WithContext(tracer.Tracer).Where("id = ?", id).First(&{{.LowerName}}).Error; err != nil {
 		tx.Rollback()
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
-				Success: false,
-				Message: "{{.Name}} not found",
-				Data:    nil,
-			})
-		}
-		return contx.Status(http.StatusInternalServerError).JSON(common.ResponseHTTP{
+		return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
 			Success: false,
-			Message: "Error retrieving {{.LowerName}}",
+			Message: err.Error(),
 			Data:    nil,
 		})
 	}
 
 	// Delete the {{.LowerName}}
-	if err := db.Delete(&{{.LowerName}}).Error; err != nil {
+	if err := db.WithContext(tracer.Tracer).Delete(&{{.LowerName}}).Error; err != nil {
 		tx.Rollback()
 		return contx.Status(http.StatusInternalServerError).JSON(common.ResponseHTTP{
 			Success: false,
@@ -473,8 +449,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 
 	// fetching {{.LowerParentName}} to be added
 	var {{.LowerParentName}} models.{{.ParentName}}
-	{{.LowerParentName}}.ID = uint({{.LowerParentName}}_id)
-	if res := db.Find(&{{.LowerParentName}}); res.Error != nil {
+	if res := db.WithContext(tracer.Tracer).Where("id = ?", {{.LowerParentName}}_id ).First(&{{.LowerParentName}}); res.Error != nil {
 		return contx.Status(http.StatusServiceUnavailable).JSON(common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -484,8 +459,7 @@ func Add{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 
 	//  {{.LowerParentName}}ending assocation
 	var {{.LowerFieldName}} models.{{.FieldName}}
-	{{.LowerFieldName}}.ID = uint({{.LowerFieldName}}_id)
-	if err := db.Find(&{{.LowerFieldName}}); err.Error != nil {
+	if err := db.WithContext(tracer.Tracer).Where("id = ?",{{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); err.Error != nil {
 		return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
 			Success: false,
 			Message: "Record not Found",
@@ -555,8 +529,7 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 	}
 	// fetching {{.LowerParentName}} to be deleted
 	var {{.LowerParentName}} models.{{.ParentName}}
-	{{.LowerParentName}}.ID = uint({{.LowerParentName}}_id)
-	if res := db.Find(&{{.LowerParentName}}); res.Error != nil {
+	if res := db.WithContext(tracer.Tracer).Where("id = ?", {{.LowerParentName}}_id).First(&{{.LowerParentName}}); res.Error != nil {
 		return contx.Status(http.StatusServiceUnavailable).JSON(common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -566,8 +539,7 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 
 	// fettchng {{.LowerFieldName}}
 	var {{.LowerFieldName}} models.{{.FieldName}}
-	{{.LowerFieldName}}.ID = uint({{.LowerFieldName}}_id)
-	if err := db.Find(&{{.LowerFieldName}}); err.Error != nil {
+	if err := db.WithContext(tracer.Tracer).Where("id = ?",{{.LowerFieldName}}_id).First(&{{.LowerFieldName}}); err.Error != nil {
 		return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
 			Success: false,
 			Message: "Record not Found",
@@ -595,7 +567,6 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 		Data:    {{.LowerParentName}},
 	})
 }
-
 
 
 {{ end}}

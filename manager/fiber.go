@@ -14,6 +14,14 @@ var (
 			fibergen()
 		},
 	}
+	fibertestcli = &cobra.Command{
+		Use:   "tfiber",
+		Short: "generate the basic curd test suites for the fiber handler functions",
+		Long:  `generate the basic curd test suites for the fiber handler functions`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fibertestgen()
+		},
+	}
 )
 
 func fibergen() {
@@ -23,7 +31,14 @@ func fibergen() {
 	temps.CommonCMD()
 }
 
+func fibertestgen() {
+	temps.LoadData()
+	temps.TestFrameFiber()
+	temps.CommonCMD()
+}
+
 func init() {
 	goFrame.AddCommand(fibercli)
+	goFrame.AddCommand(fibertestcli)
 
 }

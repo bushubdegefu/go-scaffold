@@ -63,19 +63,20 @@ var graphSchemaTemplate = `
 # Define the input type for pagination
 {{range .Models}}
 type {{.Name}} {
-	{{range .Fields}} {{.LowerName}}: {{.Type}}!
+	{{range .Fields}} {{.LowerName}}: {{.UpperType}}!
 	{{end}}}
 input Create{{.Name}}Input {
-	{{range .Fields}} {{if .Post}} {{.LowerName}}: {{.Type}}!{{end}}
+	{{range .Fields}} {{if .Post}} {{.LowerName}}: {{.UpperType}}!{{end}}
 	{{end}}}
 input Update{{.Name}}Input {
-	{{range .Fields}} {{if .Put}} {{.LowerName}}: {{.Type}}!{{end}}{{end}}}
+	{{range .Fields}} {{if .Put}} {{.LowerName}}: {{.UpperType}}!{{end}}
+	{{end}}}
 {{end}}
 
 
 # Define the queries
 type Query {
-{{range .Models}} # Retrieve a paginated list of apps
+{{range .Models}} # Retrieve a paginated list of {{.LowerName}}s
   #create paginated items
   {{.LowerName}}s(page:Int!, size: Int!): [{{.Name}}!]!
 
@@ -133,8 +134,8 @@ import (
 )
 
 
-{{range .Models}}// Create{{.LowerName}}app is the resolver for the create{{.LowerName}} field.
-func (r *mutationResolver) Createa{{.LowerName}}(ctx context.Context, input model.Create{{.Name}}Input) (*model.{{.Name}}, error) {
+{{range .Models}}// Create{{.LowerName}} is the resolver for the create{{.LowerName}} field.
+func (r *mutationResolver) Create{{.LowerName}}(ctx context.Context, input model.Create{{.Name}}Input) (*model.{{.Name}}, error) {
 
 	db := r.DB         // databse connection
 	tracer := r.Tracer // otel jaeger tracer
@@ -142,7 +143,7 @@ func (r *mutationResolver) Createa{{.LowerName}}(ctx context.Context, input mode
 	//created {{.LowerName}} initalization
 	create_{{.LowerName}} := new(model.{{.Name}})
 
-	//  initiate -> app
+	//  initiate -> {{.LowerName}}
 	{{.LowerName}} := new(models.{{.Name}})
 	{{.LowerName}}.Name = input.Name
 	{{.LowerName}}.Description = input.Description
@@ -175,8 +176,6 @@ func (r *mutationResolver) Update{{.LowerName}}(ctx context.Context, input model
 
 	// startng update transaction
 	var {{.LowerName}} models.{{.Name}}
-	{{.LowerName}}.ID = uint(input.ID)
-
 	// Check if the record exists
 	if err := db.WithContext(tracer.Tracer).First(&{{.LowerName}}, {{.LowerName}}.ID).Error; err != nil {
 		return nil, err
@@ -199,20 +198,16 @@ func (r *mutationResolver) Update{{.LowerName}}(ctx context.Context, input model
 	return update_{{.LowerName}}, nil
 }
 
-// Deleteapp is the resolver for the deleteapp field.
+// Delete{{.LowerName}} is the resolver for the delete{{.LowerName}} field.
 func (r *mutationResolver) Delete{{.LowerName}}(ctx context.Context, id uint) (bool, error) {
 	db := r.DB         // databse connection
 	tracer := r.Tracer // otel jaeger tracer
 
-	// delete {{.LowerName}} for return boolean if transaction success
-	delete_{{.LowerName}} := new(model.App)
-
 	// startng update transaction
 	var {{.LowerName}} models.{{.Name}}
-	{{.LowerName}}.ID = uint(id)
 
 	// Check if the record exists
-	if err := db.WithContext(tracer.Tracer).First(&{{.LowerName}}, {{.LowerName}}.ID).Error; err != nil {
+	if err := db.WithContext(tracer.Tracer).Where("id = ?",uint(id)).First(&{{.LowerName}}).Error; err != nil {
 		return false, err
 	}
 
@@ -281,8 +276,8 @@ func (r *queryResolver) {{.Name}}(ctx context.Context, id uint) (*model.{{.Name}
 // Relationship scaffolding section for Creating, Deleting and Getting
 // ###################################################################
 {{range .Models}}{{ range .Relations }}{{if .OtM}}
-// {{.ParentName}}{{.LowerFieldName}}s is the resolver for the getting app{{.LowerParentName}}{{.LowerFieldName}}s field.
-func (r *queryResolver) {{.LowerParentName}}{{.LowerFieldName}}s(ctx context.Context, {{.LowerFieldName}}ID uint, {{.LowerParentName}}ID uint, page uint, size uint) ([]*model.{{.FieldName}}, error) {
+// {{.ParentName}}{{.LowerFieldName}}s is the resolver for the getting {{.LowerParentName}}{{.LowerFieldName}}s field.
+func (r *queryResolver) {{.ParentName}}{{.LowerFieldName}}s(ctx context.Context, {{.LowerFieldName}}ID uint, {{.LowerParentName}}ID uint, page uint, size uint) ([]*model.{{.FieldName}}, error) {
 	db := r.DB
 	tracer := r.Tracer
 	{{.LowerFieldName}}_get := make([]*model.{{.FieldName}}, 0)
@@ -303,24 +298,34 @@ func (r *queryResolver) {{.LowerParentName}}{{.LowerFieldName}}s(ctx context.Con
 }
 {{end}}{{end}}{{end}}
 {{range .Models}}{{ range .Relations }}{{if .MtM}}
-// {{.ParentName}}{{.LowerFieldName}}s is the resolver for the getting app{{.LowerParentName}}{{.LowerFieldName}}s field.
-func (r *queryResolver) {{.LowerParentName}}{{.LowerFieldName}}s(ctx context.Context, {{.LowerFieldName}}ID uint, {{.LowerParentName}}ID uint, page uint, size uint) ([]*model.{{.FieldName}}, error) {
+// {{.ParentName}}{{.LowerFieldName}}s is the resolver for the getting {{.LowerParentName}}{{.LowerFieldName}}s field.
+func (r *queryResolver) {{.ParentName}}{{.LowerFieldName}}s(ctx context.Context, {{.LowerFieldName}}ID uint, {{.LowerParentName}}ID uint, page uint, size uint) ([]*model.{{.FieldName}}, error) {
 	db := r.DB
 	tracer := r.Tracer
-	{{.LowerFieldName}}_get := make([]*model.{{.FieldName}}, 0)
-	_, result, err := common.PaginationPureModelFilterOneToMany(db, models.{{.FieldName}}{}, []models.{{.FieldName}}{}, "{{.LowerParentName}}_id = ?", uint({{.LowerParentName}}ID), uint(page), uint(size), tracer.Tracer)
-	if err != nil {
-		return nil, err
+	{{.LowerFieldName}}s_get := make([]*model.{{.FieldName}}, 0)
+	join_string := "INNER JOIN {{.LowerParentName}}_{{.LowerFieldName}}s ur ON {{.LowerFieldName}}s.id = ur.{{.LowerFieldName}}_id"
+	filter_string := "{{.LowerParentName}}_id = ?"
+
+
+	//  to make sure no more that 50 items will be queried per request
+		if size > 50 {
+			size = 50
+		}
+
+	// dry run testing join query
+	{{.LowerFieldName}}s := []models.{{.FieldName}}{}
+	if err := db.WithContext(tracer.Tracer).Model(&models.{{.FieldName}}{}).Joins(join_string).Where(filter_string, {{.LowerParentName}}ID).Order("id asc").Limit(int(size)).Offset(int(page - 1)).Find(&{{.LowerFieldName}}s); err != nil {
+		return nil, err.Error
 	}
-	{{.LowerFieldName}} := result.([]models.{{.FieldName}})
+
 
 	// filtering response data according to filtered defined struct
 	// return error if anything happens
-	if err := mapstructure.Decode({{.LowerFieldName}}, &{{.LowerFieldName}}_get); err != nil {
+	if err := mapstructure.Decode({{.LowerFieldName}}s, &{{.LowerFieldName}}s_get); err != nil {
 		return nil, err
 	}
 
-	return {{.LowerFieldName}}_get, nil
+	return {{.LowerFieldName}}s_get, nil
 
 }
 {{end}}{{end}}{{end}}
@@ -335,11 +340,10 @@ func (r *mutationResolver) Create{{.LowerFieldName}}{{.LowerParentName}}(ctx con
 	{{.LowerParentName}}_{{.LowerFieldName}} := new(model.{{.FieldName}})
 
 	// updateing {{.LowerFieldName}} transaction
-	var app models.{{.ParentName}}
-	{{.LowerParentName}}.ID = {{.LowerParentName}}ID
+	var {{.LowerParentName}} models.{{.ParentName}}
 
 	// Check if the {{.LowerParentName}} record exists
-	if err := db.WithContext(tracer.Tracer).First(&{{.LowerParentName}}, {{.LowerParentName}}.ID).Error; err != nil {
+	if err := db.WithContext(tracer.Tracer).Where("id = ?",{{.LowerParentName}}ID).First(&{{.LowerParentName}}, {{.LowerParentName}}.ID).Error; err != nil {
 		return nil, err
 	}
 	// Check if the {{.LowerFieldName}} record exists
@@ -370,15 +374,14 @@ func (r *mutationResolver) Delete{{.LowerFieldName}}{{.LowerParentName}}(ctx con
 	db := r.DB         // databse connection
 	tracer := r.Tracer // otel jaeger tracer
 
-	//app_role for return if transaction success
+	//{{.LowerParentName}}_{{.LowerFieldName}} for return if transaction success
 	{{.LowerParentName}}_{{.LowerFieldName}} := new(model.{{.FieldName}})
 
 	// updateing {{.LowerFieldName}} transaction
 	var {{.LowerParentName}} models.{{.ParentName}}
-	{{.LowerParentName}}.ID = {{.LowerParentName}}ID
 
 	// Check if the {{.LowerParentName}} record exists
-	if err := db.WithContext(tracer.Tracer).First(&{{.LowerParentName}}, {{.LowerParentName}}.ID).Error; err != nil {
+	if err := db.WithContext(tracer.Tracer).Where("id = ?",{{.LowerParentName}}ID).First(&{{.LowerParentName}}).Error; err != nil {
 		return nil, err
 	}
 
@@ -405,30 +408,4 @@ func (r *mutationResolver) Delete{{.LowerFieldName}}{{.LowerParentName}}(ctx con
 	return {{.LowerParentName}}_{{.LowerFieldName}}, nil
 }
 {{end}}{{end}}
-`
-
-var sampleResolverTemplate = `
-// Role is the resolver for the role field.
-func (r *queryResolver) Role(ctx context.Context, id string) (*model.Role, error) {
-	req := graphql.CollectAllFields(ctx)
-	select_fileds := make([]string, 0)
-	for _, fields := range req {
-		select_fileds = append(select_fileds, fields)
-	}
-
-	fmt.Println(select_fileds)
-	db := r.DB
-	var role models.RoleGet
-	var role_get model.Role
-	if res := db.Select(select_fileds).Model(&models.Role{}).Preload(clause.Associations).Where("id = ?", id).First(&role); res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return nil, res.Error
-		}
-		return nil, res.Error
-	}
-	fmt.Println(role)
-	// filtering response data according to filtered defined struct
-	mapstructure.Decode(role, &role_get)
-	return &role_get, nil
-}
 `

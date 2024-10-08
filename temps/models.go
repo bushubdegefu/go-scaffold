@@ -266,13 +266,13 @@ var (
 	DBConn *gorm.DB
 )
 
-func GormLoggerFile() *os.File {
+func GormLoggerFile() (*os.File,error) {
 
 	gormLogFile, gerr := os.OpenFile("gormblue.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if gerr != nil {
 		log.Fatalf("error opening file: %v", gerr)
 	}
-	return gormLogFile
+	return gormLogFile,nil
 }
 
 func ReturnSession() (*gorm.DB,error) {
@@ -281,7 +281,7 @@ func ReturnSession() (*gorm.DB,error) {
 
 	app_env := configs.AppConfig.Get("DB_TYPE")
 	//  This is file to output gorm logger on to
-	gormlogger := GormLoggerFile()
+	gormlogger,_ := GormLoggerFile()
 	gormFileLogger := log.Logger{}
 	gormFileLogger.SetOutput(gormlogger)
 	gormFileLogger.Writer()
