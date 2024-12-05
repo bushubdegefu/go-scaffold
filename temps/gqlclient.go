@@ -83,11 +83,11 @@ export const use{{.Name}}SchemaStore = create((set, get) => ({
         console.log(response.data);
         set((state) => ({
           ...state,
-          {{.LowerName}}s: response?.data?.{{.LowerName}}s,
+          {{.LowerName}}s: response?.data?.data?.{{.LowerName}}s,
         }));
       })
       .catch((response, error) => {
-        const responseError = response?.data?.details;
+        const responseError = response?.data?.data?.details;
         console.log(responseError);
       });
   },
@@ -115,7 +115,7 @@ export const use{{.Name}}SchemaStore = create((set, get) => ({
         console.log(response.data);
         set((state) => ({
           ...state,
-          {{.LowerName}}: response?.data?.{{.LowerName}},
+          {{.LowerName}}: response?.data?.data?.{{.LowerName}},
         }));
       })
       .catch((response, error) => {
@@ -125,7 +125,7 @@ export const use{{.Name}}SchemaStore = create((set, get) => ({
   },
   create{{.LowerName}}: async (data) => {
     const pdata = {
-	    mutation: {{.BackTick}} mutation {
+	    query: {{.BackTick}} mutation {
 	        create{{.LowerName}}(input: Create{{.Name}}Input) {
 	        {{range .Fields}} {{.LowerName}}
 	        {{end}}
@@ -148,20 +148,20 @@ export const use{{.Name}}SchemaStore = create((set, get) => ({
         data: pdata,
       })
       .then(function (response) {
-        console.log(response.data);
         set((state) => ({
           ...state,
-          {{.LowerName}}: response?.data?.{{.LowerName}},
+          {{.LowerName}}: response?.data?.data?.{{.LowerName}},
         }));
+        get().get{{.LowerName}}s()
       })
       .catch((response, error) => {
-        const responseError = response?.data?.details;
+        const responseError = response?.data?.data?.details;
         console.log(responseError);
       });
   },
   update{{.LowerName}}: async (data) => {
     const pdata = {
-    mutation: {{.BackTick}} mutation {
+    query: {{.BackTick}} mutation {
           update{{.LowerName}}(input: Update{{.Name}}Input) {
           {{range .Fields}} {{.LowerName}}
           {{end}}
@@ -185,15 +185,16 @@ export const use{{.Name}}SchemaStore = create((set, get) => ({
       })
       .then(function (response) {
         console.log(response.data);
+        get().get{{.LowerName}}s()
       })
       .catch((response, error) => {
-        const responseError = response?.data?.details;
+        const responseError = response?.data?.data?.details;
         console.log(responseError);
       });
   },
   delete{{.LowerName}}: async (id) => {
     const pdata = {
-    	mutation: {{.BackTick}} mutation {
+    	query: {{.BackTick}} mutation {
           delete{{.LowerName}}(id: Int!)
         }{{.BackTick}},
       	variables: {
@@ -213,9 +214,10 @@ export const use{{.Name}}SchemaStore = create((set, get) => ({
       })
       .then(function (response) {
         console.log(response.data);
+        get().get{{.LowerName}}s()
       })
       .catch((response, error) => {
-        const responseError = response?.data?.details;
+        const responseError = response?.data?.data?.details;
         console.log(responseError);
       });
   },
@@ -252,8 +254,9 @@ export const use{{.Name}}SchemaStore = create((set, get) => ({
           console.log(response.data);
           set((state) => ({
             ...state,
-            {{.LowerParentName}}{{.LowerFieldName}}s: response?.data?.{{.LowerFieldName}},
+            {{.LowerParentName}}{{.LowerFieldName}}s: response?.data?.data?.{{.LowerFieldName}},
           }));
+
         })
         .catch((response, error) => {
           const responseError = response?.data?.details;
@@ -262,7 +265,7 @@ export const use{{.Name}}SchemaStore = create((set, get) => ({
     },
   create{{.LowerParentName}}{{.LowerFieldName}}s: async ({{.LowerParentName}}Id, {{.LowerFieldName}}Id) => {
 	const pdata = {
-		mutation: {{.BackTick}} mutation {
+		query: {{.BackTick}} mutation {
 	        create{{.LowerParentName}}{{.LowerFieldName}}({{.LowerParentName}}_id: Int!, {{.LowerFieldName}}_id: Int! ) {
 	        }}
 	    {{.BackTick}},
@@ -286,13 +289,13 @@ export const use{{.Name}}SchemaStore = create((set, get) => ({
 	        console.log(response.data);
 	    })
 	    .catch((response, error) => {
-	        const responseError = response?.data;
+	        const responseError = response?.data?.data;
 	        console.log(responseError);
     });
     },
     delete{{.LowerParentName}}{{.LowerFieldName}}s: async ({{.LowerParentName}}Id, {{.LowerFieldName}}Id) => {
     const pdata = {
-		mutation: {{.BackTick}} mutation {
+		query: {{.BackTick}} mutation {
 	        delete{{.LowerParentName}}{{.LowerFieldName}}({{.LowerParentName}}_id: Int!, {{.LowerFieldName}}_id: Int! ) {
 	        }}
 	    {{.BackTick}},

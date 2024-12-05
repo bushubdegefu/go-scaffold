@@ -30,6 +30,14 @@ var (
 			gqlcurdclientgen()
 		},
 	}
+	gqlnextclientcli = &cobra.Command{
+		Use:   "gqlnxtclient",
+		Short: "Generate Basic gql next js client requests client code store.js file using the config.json file",
+		Long:  `Generate Basic gql next js client requests code store.js file using the config.json file`,
+		Run: func(cmd *cobra.Command, args []string) {
+			gqlnextclientgen()
+		},
+	}
 	commonservicecli = &cobra.Command{
 		Use:   "service",
 		Short: "Generate Basic linux service, docker and git ignore files with basic haproxy cft file config.json file",
@@ -57,6 +65,12 @@ func gqlcurdclientgen() {
 	temps.GQLClientFrame()
 	temps.CommonGraphQLFrame()
 }
+func gqlnextclientgen() {
+	temps.LoadData()
+	// gql store.js file generation
+	temps.GQLServerClientFrame()
+	temps.CommonGraphQLFrame()
+}
 
 func servicecligen() {
 	temps.LoadData()
@@ -71,5 +85,6 @@ func init() {
 	goFrame.AddCommand(gqlcurdcli)
 	goFrame.AddCommand(commonservicecli)
 	goFrame.AddCommand(gqlcurdclientcli)
+	goFrame.AddCommand(gqlnextclientcli)
 
 }
