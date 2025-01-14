@@ -146,7 +146,7 @@ func Get{{.Name}}ByID(contx *fiber.Ctx) error {
 	// Preparing and querying database using Gorm
 	var {{.LowerName}}s_get models.{{.Name}}Get
 	var {{.LowerName}}s models.{{.Name}}
-	if res := db.WithContext(tracer.Tracer).Model(&models.{{.Name}}{}).Preload(clause.Associations).Where("id = ?", id).First(&{{.LowerName}}s); res.Error != nil {
+	if res := db.WithContext(tracer.Tracer).Model(&models.{{.Name}}{}).Where("id = ?", id).First(&{{.LowerName}}s); res.Error != nil {
 		return contx.Status(http.StatusNotFound).JSON(common.ResponseHTTP{
 			Success: false,
 			Message: res.Error.Error(),
@@ -402,9 +402,110 @@ func Delete{{.Name}}(contx *fiber.Ctx) error {
 // ################################################################
 // Relationship Based Endpoints
 // ################################################################
-
 {{ range .Relations }}
 {{if .MtM}}
+// Get {{.FieldName}}s of {{.ParentName}}
+// @Summary Get {{.ParentName}} to {{.FieldName}}
+// @Description Get {{.FieldName}} {{.ParentName}}
+// @Tags {{.FieldName}}{{.ParentName}}s
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param page query int true "page"
+// @Param size query int true "page size"
+// @Success 200 {object} common.ResponsePagination{data=[]models.{{.FieldName}}Get}
+// @Param {{.LowerFieldName}}_id path int true "{{.FieldName}} ID"
+// @Param {{.LowerParentName}}_id path int true "{{.ParentName}} ID"
+// @Failure 400 {object} common.ResponseHTTP{}
+// @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [post]
+func Get{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
+	//  Geting tracer
+	ctx := contx.Locals("tracer")
+	tracer, _ := ctx.(*observe.RouteTracer)
+
+	// database connection
+	db, _ := contx.Locals("db").(*gorm.DB)
+
+	//  parsing Query Prameters
+	Page, _ := strconv.Atoi(contx.Query("page"))
+	Limit, _ := strconv.Atoi(contx.Query("size"))
+	//  checking if query parameters  are correct
+	if Page == 0 || Limit == 0 {
+		return contx.Status(http.StatusBadRequest).JSON(common.ResponseHTTP{
+			Success: false,
+			Message: "Not Allowed, Bad request",
+			Data:    nil,
+		})
+	}
+
+	// place holder for total number of items
+	var total int64
+
+	var	{{.LowerFieldName}}s []model.{{.FieldName}}
+	join_string := "INNER JOIN {{.LowerParentName}}_{{.LowerFieldName}}s ur ON {{.LowerFieldName}}s.id = ur.{{.LowerFieldName}}_id"
+	filter_string := "{{.LowerParentName}}_id = ?"
+
+
+	//  to make sure no more that 50 items will be queried per request
+		if size > 100 {
+			size = 100
+		}
+
+	// validate path params
+	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Param("{{.LowerFieldName}}_id"))
+	if err != nil {
+		return contx.Status(http.StatusBadRequest).JSON(common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
+
+	// validate path params
+	{{.LowerParentName}}_id, err := strconv.Atoi(contx.Param("{{.LowerParentName}}_id"))
+	if err != nil {
+		return contx.Status(http.StatusBadRequest).JSON(common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
+
+	// {{.LowerParentName}} to be added
+	# ######################################################################
+	{{.LowerFieldName}}s := []models.{{.FieldName}}{}
+	//getting total number of items
+	if err := db.WithContext(tracer.Tracer).Model(&models.{{.FieldName}}{}).Joins(join_string).Where(filter_string, {{.LowerParentName}}_id).Count(&total); err != nil {
+			return contx.Status(http.StatusBadRequest).JSON(common.ResponseHTTP{
+				Success: false,
+				Message: err.Error(),
+				Data:    nil,
+			})
+	}
+
+	//  actual result query
+	if err := db.WithContext(tracer.Tracer).Model(&models.{{.FieldName}}{}).Joins(join_string).Where(filter_string, {{.LowerParentName}}_id).Order("id asc").Limit(int(Limit)).Offset(int(Page - 1)).Find(&{{.LowerFieldName}}s); err != nil {
+			return contx.Status(http.StatusBadRequest).JSON(common.ResponseHTTP{
+				Success: false,
+				Message: err.Error(),
+				Data:    nil,
+			})
+	}
+	# ######################################################################
+	pages := math.Ceil(float64(total) / float64(Limit))
+
+	// return value if transaction is sucessfull
+	return contx.Status(http.StatusOK).JSON(common.ResponsePagination{
+		Success: true,
+		Items:   {{.LowerFieldName}}s,
+		Message: "working",
+		Total:   uint(total),
+		Page:    uint(response_page),
+		Size:    uint(Limit),
+		Pages:   uint(pages),
+	})
+}
+
 
 // Add {{.FieldName}} to {{.ParentName}}
 // @Summary Add {{.ParentName}} to {{.FieldName}}
@@ -567,13 +668,77 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 		Data:    {{.LowerParentName}},
 	})
 }
+{{ end}}{{ end}}
+{{ range .Relations }}{{if .OtM}}
+// Get {{.FieldName}}s of {{.ParentName}}
+// @Summary Get {{.ParentName}} to {{.FieldName}}
+// @Description Get {{.FieldName}} {{.ParentName}}
+// @Tags {{.FieldName}}{{.ParentName}}s
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param page query int true "page"
+// @Param size query int true "page size"
+// @Success 200 {object} common.ResponsePagination{data=[]models.{{.FieldName}}Get}
+// @Param {{.LowerFieldName}}_id path int true "{{.FieldName}} ID"
+// @Param {{.LowerParentName}}_id path int true "{{.ParentName}} ID"
+// @Failure 400 {object} common.ResponseHTTP{}
+// @Router /{{.LowerFieldName}}{{.LowerParentName}}/{{ "{" }}{{.LowerFieldName}}_id{{ "}" }}/{{ "{" }}{{.LowerParentName}}_id{{ "}" }} [post]
+func Get{{.FieldName}}{{.ParentName}}s(contx echo.Context) error {
+	//  Geting tracer
+	tracer := contx.Get("tracer").(*observe.RouteTracer)
+
+	//  Geting dbsession
+		db := contx.Get("db").(*gorm.DB)
+
+	//  parsing Query Prameters
+	Page, _ := strconv.Atoi(contx.Query("page"))
+	Limit, _ := strconv.Atoi(contx.Query("size"))
+	//  checking if query parameters  are correct
+	if Page == 0 || Limit == 0 {
+		return contx.Status(http.StatusBadRequest).JSON(common.ResponseHTTP{
+			Success: false,
+			Message: "Not Allowed, Bad request",
+			Data:    nil,
+		})
+	}
 
 
-{{ end}}
-{{ end}}
+	// validate path params
+	{{.LowerFieldName}}_id, err := strconv.Atoi(contx.Param("{{.LowerFieldName}}_id"))
+	if err != nil {
+		return contx.Status(http.StatusBadRequest).JSON(common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
 
-{{ range .Relations }}
-{{if .OtM}}
+	// validate path params
+	{{.LowerParentName}}_id, err := strconv.Atoi(contx.Param("{{.LowerParentName}}_id"))
+	if err != nil {
+		return contx.Status(http.StatusBadRequest).JSON(common.ResponseHTTP{
+			Success: false,
+			Message: err.Error(),
+			Data:    nil,
+		})
+	}
+
+	// {{.LowerParentName}} to be added
+
+	_, result, err := common.PaginationPureModelFilterOneToMany(db, models.{{.FieldName}}{}, []models.{{.FieldName}}{}, "{{.LowerParentName}}_id = ?", uint({{.LowerParentName}}_id), uint(Page), uint(Limit), tracer.Tracer)
+	if err != nil {
+			return contx.Status(http.StatusBadRequest).JSON(common.ResponseHTTP{
+				Success: false,
+				Message: err.Error(),
+				Data:    nil,
+			})
+	}
+
+
+	// return value if transaction is sucessfull
+	return contx.Status(http.StatusOK).JSON(result)
+}
 
 // Add {{.ParentName}} {{.FieldName}}
 // @Summary Add {{.ParentName}} to {{.FieldName}}
@@ -720,10 +885,5 @@ func Delete{{.FieldName}}{{.ParentName}}s(contx *fiber.Ctx) error {
 		Data:    {{.LowerParentName}},
 	})
 }
-
-
-{{ end}}
-{{ end}}
-
-
+{{ end}}{{ end}}
 `

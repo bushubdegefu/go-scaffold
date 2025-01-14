@@ -51,51 +51,51 @@ const BaseURL = "http://localhost:8500/api/v1";
 //#######################################################
 
   export async function get_{{.LowerName}}s(){
-  const cookieStore = cookies();
-  const token = cookieStore.get("access_token")?.value;
-  const current_project = JSON.parse(cookieStore.get("current_project")?.value);
-  const page_size = cookieStore.get("page_size")?.value;
-  const current_page = cookieStore.get("current_page")?.value;
+	  const cookieStore = cookies();
+	  const token = cookieStore.get("access_token")?.value;
+	  const current_project = JSON.parse(cookieStore.get("current_project")?.value);
+	  const page_size = cookieStore.get("page_size")?.value;
+	  const current_page = cookieStore.get("current_page")?.value;
 
-  	const pdata ={
-   		query: {{.BackTick}} query { {{.LowerName}}s($page: Int!, $size: Int!){
-     		{{.LowerName}}s($page: $page, $size: $size) {
-            {{range .Fields}} {{.LowerName}}
-            {{end}}
-            }
-        }{{.BackTick}},
-        variables: {
-        	page:current_page,
-        	size: page_size
-        }
-    }
+	  	const pdata ={
+	   		query: {{.BackTick}} query { {{.LowerName}}s($page: Int!, $size: Int!){
+	     		{{.LowerName}}s($page: $page, $size: $size) {
+	            {{range .Fields}} {{.LowerName}}
+	            {{end}}
+	            }
+	        }{{.BackTick}},
+	        variables: {
+	        	page:current_page,
+	        	size: page_size
+	        }
+	    }
 
-    try {
-      const response = await axios.post(
-        {{.BackTick}}${BaseURL}/${postURL}/${current_project?.id}{{.BackTick}},
-        pdata, // Directly passing the data
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "X-APP-TOKEN": token,
-          },
-        },
-      );
+	    try {
+	      const response = await axios.post(
+	        {{.BackTick}}${BaseURL}/${postURL}/${current_project?.id}{{.BackTick}},
+	        pdata, // Directly passing the data
+	        {
+	          headers: {
+	            "Content-Type": "application/json",
+	            "X-APP-TOKEN": token,
+	          },
+	        },
+	      );
 
-      // If the response is successful, return the {{.LowerName}}s data
-      return response?.data?.data?.{{.LowerName}}s || [];
-    } catch (error) {
-      // Log error details for debugging
-      console.error("Error fetching {{.LowerName}}s:", error);
+	      // If the response is successful, return the {{.LowerName}}s data
+	      return response?.data?.data?.{{.LowerName}}s || [];
+	    } catch (error) {
+	      // Log error details for debugging
+	      console.error("Error fetching {{.LowerName}}s:", error);
 
-      // Check if error response contains specific details and return them
-      if (error?.response?.data) {
-        return [error];
-      }
+	      // Check if error response contains specific details and return them
+	      if (error?.response?.data) {
+	        return [error];
+	      }
 
-      // If no specific error details, return a generic message
-      return ["Unkown error happened",];
-  }
+	      // If no specific error details, return a generic message
+	      return ["Unkown error happened",];
+	  }
 }
 
 export  async function get_{{.LowerName}}({{.LowerName}}_id){
@@ -278,6 +278,7 @@ export async function delete_{{.LowerName}}(id){
 
   // ######################################
   // relation OTM/MTM
+  // ######################################
   {{ range .Relations }}
 export async function get_{{.LowerParentName}}{{.LowerFieldName}}s({{.LowerParentName}}Id, {{.LowerFieldName}}Id, page, size){
 	const cookieStore = cookies();
@@ -343,32 +344,32 @@ export async function create_{{.LowerParentName}}{{.LowerFieldName}}s({{.LowerPa
 			}
 		}
 
-  try {
-      const response = await axios.post(
-        {{.BackTick}}${BaseURL}/${postURL}/${current_project?.id}{{.BackTick}},
-        pdata, // Directly passing the data
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "X-APP-TOKEN": token,
-          },
-        },
-      );
+	  try {
+	      const response = await axios.post(
+	        {{.BackTick}}${BaseURL}/${postURL}/${current_project?.id}{{.BackTick}},
+	        pdata, // Directly passing the data
+	        {
+	          headers: {
+	            "Content-Type": "application/json",
+	            "X-APP-TOKEN": token,
+	          },
+	        },
+	      );
 
-      // If the response is successful, return the added  {{.LowerFieldName}} on to {{.LowerParentName}} data
-      return response?.data?.data?.{{.LowerFieldName}} || [];
-    } catch (error) {
-      // Log error details for debugging
-      console.error("Error adding {{.LowerParentName}} to  {{.LowerFieldName}}:", error);
+	      // If the response is successful, return the added  {{.LowerFieldName}} on to {{.LowerParentName}} data
+	      return response?.data?.data?.{{.LowerFieldName}} || [];
+	    } catch (error) {
+	      // Log error details for debugging
+	      console.error("Error adding {{.LowerParentName}} to  {{.LowerFieldName}}:", error);
 
-      // Check if error response contains specific details and return them
-      if (error?.response?.data) {
-        return [error];
-      }
+	      // Check if error response contains specific details and return them
+	      if (error?.response?.data) {
+	        return [error];
+	      }
 
-      // If no specific error details, return a generic message
-      return ["Unkown error happened",];
-    }
+	      // If no specific error details, return a generic message
+	      return ["Unkown error happened",];
+	    }
 }
 
 export   async function delete_{{.LowerParentName}}{{.LowerFieldName}}s({{.LowerParentName}}Id, {{.LowerFieldName}}Id){

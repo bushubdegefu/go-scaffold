@@ -58,16 +58,19 @@ export const use{{.Name}}SchemaStore = create((set, get) => ({
   page: 1,
   size: 15,
   get{{.LowerName}}s: async () => {
-  	const pdata ={
-   		query: {{.BackTick}} query { {{.LowerName}}s(page: Int!, size: Int!) {
-            {{range .Fields}} {{.LowerName}}
-            {{end}}
-        }{{.BackTick}},
-        variables: {
-        	page: get().page,
-        	size: get().size
-        }
-    }
+
+  const pdata ={
+  		query: {{.BackTick}} query { {{.LowerName}}s($page: Int!, $size: Int!){
+    		{{.LowerName}}s($page: $page, $size: $size) {
+           {{range .Fields}} {{.LowerName}}
+           {{end}}
+           }
+       }{{.BackTick}},
+       variables: {
+       	page:current_page,
+       	size: page_size
+       }
+   }
 
     await btmClient
       .request({

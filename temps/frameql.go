@@ -21,17 +21,20 @@ func GraphFrame() {
 		panic(err)
 	}
 
-	schema_file, err := os.Create("gschema/schema.graphqls")
+	schema_file, err := os.Create(fmt.Sprintf("gschema/schema.graphqls"))
 	if err != nil {
 		panic(err)
 	}
-	defer schema_file.Close()
 
 	err = schema_tmpl.Execute(schema_file, RenderData)
 	if err != nil {
 		panic(err)
 	}
+
+	defer schema_file.Close()
+
 }
+
 func GraphCurdFrame() {
 	// ####################################################
 	//  graph template
@@ -47,24 +50,35 @@ func GraphCurdFrame() {
 		panic(err)
 	}
 
-	schema_file, err := os.Create("gschema/schema.resolvers.go")
-	if err != nil {
-		panic(err)
-	}
-	defer schema_file.Close()
+	for _, model := range RenderData.Models {
 
-	err = schema_tmpl.Execute(schema_file, RenderData)
-	if err != nil {
-		panic(err)
+		schema_file, err := os.Create(fmt.Sprintf("gschema/%v.resolvers.go", model.LowerName))
+		if err != nil {
+			panic(err)
+		}
+
+		err = schema_tmpl.Execute(schema_file, model)
+		if err != nil {
+			panic(err)
+		}
+		schema_file.Close()
+
 	}
 }
 
 var graphSchemaTemplate = `
+directive @hasRole(roles: [String!]!) on FIELD_DEFINITION
+
+scalar Time
+{{ range .Models}}
 # Define the input type for pagination
-{{range .Models}}
 type {{.Name}} {
 	{{range .Fields}} {{.LowerName}}: {{.UpperType}}!
 	{{end}}}
+type Get{{.Name}}s {
+	total: Int!
+	{{.LowerName}}s: [{{.Name}}!]!
+}
 input Create{{.Name}}Input {
 	{{range .Fields}} {{if .Post}} {{.LowerName}}: {{.UpperType}}!{{end}}
 	{{end}}}
@@ -74,28 +88,28 @@ input Update{{.Name}}Input {
 {{end}}
 
 
+
 # Define the queries
 type Query {
-{{range .Models}} # Retrieve a paginated list of {{.LowerName}}s
   #create paginated items
-  {{.LowerName}}s(page:Int!, size: Int!): [{{.Name}}!]!
+  {{ range .Models}}{{.LowerName}}s(page:Int!, size: Int!):  Get{{.Name}}s!
 
   # Retrieve a specific {{.Name}} by its ID
   {{.LowerName}}(id: Int!): {{.Name}}!
 
   {{ range .Relations }}{{if .MtM}}
   # Retrieve a  list names of {{.FieldName}}s of specfic {{.ParentName}} by its ID
-  {{.LowerParentName}}{{.LowerFieldName}}s({{.LowerFieldName}}_id: Int!, {{.LowerParentName}}_id: Int!, page: Int! ,size: Int!): [{{.FieldName}}!]!{{end}}{{end}}
+  {{.LowerParentName}}{{.LowerFieldName}}s({{.LowerFieldName}}_id: Int!, {{.LowerParentName}}_id: Int!, page: Int! ,size: Int!): Get{{.FieldName}}s!{{end}}{{end}}
   {{ range .Relations }}{{if .OtM}}
   #Get {{.ParentName}} {{.FieldName}}s
-  {{.LowerParentName}}{{.LowerFieldName}}s({{.LowerFieldName}}_id: Int!, {{.LowerParentName}}_id: Int!, page: Int! ,size: Int!): [{{.FieldName}}!]!{{end}}{{end}}
-  {{end}}}
+  {{.LowerParentName}}{{.LowerFieldName}}s({{.LowerFieldName}}_id: Int!, {{.LowerParentName}}_id: Int!, page: Int! ,size: Int!): Get{{.FieldName}}s!{{end}}{{end}}
+  {{end}}
+  }
 
 # Define the mutations
 type Mutation {
-  {{range .Models}}# Create a new {{.LowerName}}
   #create object
-  create{{.LowerName}}(input: Create{{.Name}}Input!): {{.Name}}!
+  {{ range .Models}}create{{.LowerName}}(input: Create{{.Name}}Input!): {{.Name}}!
 
   # Update an existing {{.LowerName}}
   update{{.LowerName}}(input: Update{{.Name}}Input!): {{.Name}}!
@@ -109,8 +123,7 @@ type Mutation {
   {{ range .Relations }}{{if .OtM}}
   create{{.LowerFieldName}}{{.LowerParentName}}({{.LowerFieldName}}_id: Int!, {{.LowerParentName}}_id: Int!): {{.FieldName}}!
   delete{{.LowerFieldName}}{{.LowerParentName}}({{.LowerFieldName}}_id: Int!, {{.LowerParentName}}_id: Int!): {{.FieldName}}!{{end}}{{end}}
-  {{end}}
-}
+  {{end}}}
 `
 
 var schemaResolverTemplate = `
@@ -128,13 +141,12 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"{{.ProjectName}}.com.com/common"
-	"{{.ProjectName}}.com.com/graph/model"
-	"{{.ProjectName}}.com.com/models"
+	"{{.ProjectName}}.com/common"
+	"{{.ProjectName}}.com/graph/model"
+	"{{.ProjectName}}.com/models"
 )
 
-
-{{range .Models}}// Create{{.LowerName}} is the resolver for the create{{.LowerName}} field.
+// Create{{.LowerName}} is the resolver for the create{{.LowerName}} field.
 func (r *mutationResolver) Create{{.LowerName}}(ctx context.Context, input model.Create{{.Name}}Input) (*model.{{.Name}}, error) {
 
 	db := r.DB         // databse connection
@@ -226,24 +238,25 @@ func (r *mutationResolver) Delete{{.LowerName}}(ctx context.Context, id uint) (b
 }
 
 // {{.Name}}s is the resolver for getting list of {{.LowerName}}s field.
-func (r *queryResolver) {{.Name}}s(ctx context.Context, page uint, size uint) ([]*model.{{.Name}}, error) {
+func (r *queryResolver) {{.Name}}s(ctx context.Context, page uint, size uint) (*model.Get{{.Name}}s, error) {
 
 	db := r.DB    			// Database session for querying
 	tracer := r.Tracer		// otel collector context and span
 
 	{{.LowerName}}_get := make([]*model.{{.Name}}, 0)
-	_, result, err := common.PaginationPureModel(db, models.{{.Name}}{}, []models.{{.Name}}{}, uint(page), uint(size), tracer.Tracer)
+	result,_,  err := common.PaginationPureModel(db, models.{{.Name}}{}, []models.{{.Name}}{}, uint(page), uint(size), tracer.Tracer)
 	if err != nil {
 		return nil, err
 	}
-	{{.LowerName}} := result.([]models.{{.Name}})
+	{{.LowerName}} := result.Items.([]models.{{.Name}})
+	total := result.Total
 
 	// filtering response data according to filtered defined struct
 	// return error if anything happens
 	if err := mapstructure.Decode({{.LowerName}}, &{{.LowerName}}_get); err != nil {
 		return nil, err
 	}
-	return {{.LowerName}}_get, nil
+	return &model.Get{{.Name}}s{Total: total, {{.Name}}s: {{.LowerName}}_get }, nil
 }
 
 // {{.Name}} is the resolver for single {{.LowerName}} field.
@@ -254,7 +267,7 @@ func (r *queryResolver) {{.Name}}(ctx context.Context, id uint) (*model.{{.Name}
 	var {{.LowerName}} models.{{.Name}}    	// SQL GORM model
 	var {{.LowerName}}_get model.{{.Name}} 	// graphql model
 
-	if res := db.WithContext(tracer.Tracer).Model(&models.{{.Name}}{}).Preload(clause.Associations).Where("id = ?", uint(id)).First(&{{.LowerName}}); res.Error != nil {
+	if res := db.WithContext(tracer.Tracer).Model(&models.{{.Name}}{}).Where("id = ?", uint(id)).First(&{{.LowerName}}); res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 			return nil, res.Error
 		}
@@ -270,22 +283,22 @@ func (r *queryResolver) {{.Name}}(ctx context.Context, id uint) (*model.{{.Name}
 	return &{{.LowerName}}_get, nil
 
 }
-{{end}}
 
 // ###################################################################
 // Relationship scaffolding section for Creating, Deleting and Getting
 // ###################################################################
-{{range .Models}}{{ range .Relations }}{{if .OtM}}
+{{ range .Relations }}{{if .OtM}}
 // {{.ParentName}}{{.LowerFieldName}}s is the resolver for the getting {{.LowerParentName}}{{.LowerFieldName}}s field.
-func (r *queryResolver) {{.ParentName}}{{.LowerFieldName}}s(ctx context.Context, {{.LowerFieldName}}ID uint, {{.LowerParentName}}ID uint, page uint, size uint) ([]*model.{{.FieldName}}, error) {
+func (r *queryResolver) {{.ParentName}}{{.LowerFieldName}}s(ctx context.Context, {{.LowerFieldName}}ID uint, {{.LowerParentName}}ID uint, page uint, size uint) (*model.Get{{.FieldName}}s, error) {
 	db := r.DB
 	tracer := r.Tracer
 	{{.LowerFieldName}}_get := make([]*model.{{.FieldName}}, 0)
-	_, result, err := common.PaginationPureModelFilterOneToMany(db, models.{{.FieldName}}{}, []models.{{.FieldName}}{}, "{{.LowerParentName}}_id = ?", uint({{.LowerParentName}}ID), uint(page), uint(size), tracer.Tracer)
+	result,_,  err := common.PaginationPureModelFilterOneToMany(db, models.{{.FieldName}}{}, []models.{{.FieldName}}{}, "{{.LowerParentName}}_id = ?", uint({{.LowerParentName}}ID), uint(page), uint(size), tracer.Tracer)
 	if err != nil {
 		return nil, err
 	}
-	{{.LowerFieldName}} := result.([]models.{{.FieldName}})
+	{{.LowerFieldName}} := result.Items.([]models.{{.FieldName}})
+	total := result.Total
 
 	// filtering response data according to filtered defined struct
 	// return error if anything happens
@@ -293,31 +306,36 @@ func (r *queryResolver) {{.ParentName}}{{.LowerFieldName}}s(ctx context.Context,
 		return nil, err
 	}
 
-	return {{.LowerFieldName}}_get, nil
-
+	return &model.Get{{.FieldName}}s{Total: total, {{.FieldName}}s: {{.LowerFieldName}}_get }, nil
 }
-{{end}}{{end}}{{end}}
-{{range .Models}}{{ range .Relations }}{{if .MtM}}
+{{end}}{{end}}
+{{ range .Relations }}{{if .MtM}}
 // {{.ParentName}}{{.LowerFieldName}}s is the resolver for the getting {{.LowerParentName}}{{.LowerFieldName}}s field.
-func (r *queryResolver) {{.ParentName}}{{.LowerFieldName}}s(ctx context.Context, {{.LowerFieldName}}ID uint, {{.LowerParentName}}ID uint, page uint, size uint) ([]*model.{{.FieldName}}, error) {
+func (r *queryResolver) {{.ParentName}}{{.LowerFieldName}}s(ctx context.Context, {{.LowerFieldName}}ID uint, {{.LowerParentName}}ID uint, page uint, size uint) (*model.Get{{.FieldName}}s, error) {
 	db := r.DB
 	tracer := r.Tracer
+	var total int64
+
 	{{.LowerFieldName}}s_get := make([]*model.{{.FieldName}}, 0)
 	join_string := "INNER JOIN {{.LowerParentName}}_{{.LowerFieldName}}s ur ON {{.LowerFieldName}}s.id = ur.{{.LowerFieldName}}_id"
 	filter_string := "{{.LowerParentName}}_id = ?"
 
 
 	//  to make sure no more that 50 items will be queried per request
-		if size > 50 {
-			size = 50
+		if size > 100 {
+			size = 100
 		}
 
-	// dry run testing join query
 	{{.LowerFieldName}}s := []models.{{.FieldName}}{}
-	if err := db.WithContext(tracer.Tracer).Model(&models.{{.FieldName}}{}).Joins(join_string).Where(filter_string, {{.LowerParentName}}ID).Order("id asc").Limit(int(size)).Offset(int(page - 1)).Find(&{{.LowerFieldName}}s); err != nil {
+	//getting total number of items
+	if err := db.WithContext(tracer.Tracer).Model(&models.{{.FieldName}}{}).Joins(join_string).Where(filter_string, {{.LowerParentName}}ID).Count(&total); err != nil {
 		return nil, err.Error
 	}
 
+	//  actual result query
+	if err := db.WithContext(tracer.Tracer).Model(&models.{{.FieldName}}{}).Joins(join_string).Where(filter_string, {{.LowerParentName}}ID).Order("id asc").Limit(int(size)).Offset(int(page - 1)).Find(&{{.LowerFieldName}}s); err != nil {
+		return nil, err.Error
+	}
 
 	// filtering response data according to filtered defined struct
 	// return error if anything happens
@@ -325,12 +343,12 @@ func (r *queryResolver) {{.ParentName}}{{.LowerFieldName}}s(ctx context.Context,
 		return nil, err
 	}
 
-	return {{.LowerFieldName}}s_get, nil
+	return &model.Get{{.FieldName}}s{Total: uint(total), {{.FieldName}}s: {{.LowerFieldName}}s_get }, nil
 
 }
-{{end}}{{end}}{{end}}
+{{end}}{{end}}
 
-{{range .Models}}{{ range .Relations }}
+{{ range .Relations }}
 // Create{{.LowerFieldName}}{{.LowerParentName}} is the resolver for the create{{.LowerFieldName}}{{.LowerParentName}} field.
 func (r *mutationResolver) Create{{.LowerFieldName}}{{.LowerParentName}}(ctx context.Context, {{.LowerFieldName}}ID uint, {{.LowerParentName}}ID uint) (*model.{{.FieldName}}, error) {
 	db := r.DB         // databse connection
@@ -407,5 +425,5 @@ func (r *mutationResolver) Delete{{.LowerFieldName}}{{.LowerParentName}}(ctx con
 	}
 	return {{.LowerParentName}}_{{.LowerFieldName}}, nil
 }
-{{end}}{{end}}
+{{end}}
 `
